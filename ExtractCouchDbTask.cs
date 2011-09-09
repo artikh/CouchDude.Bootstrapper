@@ -15,7 +15,10 @@ namespace CouchDude.Bootstrapper
 		{
 			Extract(settings.CouchDBDistributive, settings.CouchDBDirectory);
 			if (settings.SetupCouchDBLucene)
+			{
 				Extract(settings.CouchDBLuceneDistributive, settings.CouchDBLuceneDirectory);
+				Extract(settings.JavaDistributive, settings.JavaDirectory);
+			}
 		}
 
 		private static void Extract(FileInfo distributiveFile, DirectoryInfo targetDir)

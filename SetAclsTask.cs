@@ -20,7 +20,7 @@ namespace CouchDude.Bootstrapper
 			if (currentUserSecurityIdentifier == null)
 				throw new InvalidOperationException("Current user Windows security identifier could not be retrived.");
 			
-			SetSecurity(FileSystemRights.FullControl, currentUserSecurityIdentifier, settings.WorkingDirectory);
+			SetSecurity(FileSystemRights.FullControl, currentUserSecurityIdentifier, settings.BinDirectory);
 			SetSecurity(FileSystemRights.FullControl, currentUserSecurityIdentifier, settings.LogDirectory);
 			SetSecurity(FileSystemRights.FullControl, currentUserSecurityIdentifier, settings.DataDirectory);
 		}

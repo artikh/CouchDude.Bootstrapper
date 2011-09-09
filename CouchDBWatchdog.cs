@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using Common.Logging;
-using CouchDude.Utils;
 
 
 namespace CouchDude.Bootstrapper
@@ -23,17 +22,16 @@ namespace CouchDude.Bootstrapper
 
 		private Process batchFileProcess;
 		private Process erlProcess;
-		CouchDBReplicator dbReplicator;
 		private readonly Uri couchAddress;
 
 		/// <constructor />
 		public CouchDBWatchdog(BootstrapSettings settings)
 		{
 			this.settings = settings;
-			if (!settings.WorkingDirectory.Exists)
+			if (!settings.BinDirectory.Exists)
 				throw new Exception("CouchDB folder does not exist");
 
-			startCouchDbBatchFile = settings.WorkingDirectory.EnumerateFiles("couchdb.bat", SearchOption.AllDirectories).First();
+			startCouchDbBatchFile = settings.BinDirectory.EnumerateFiles("couchdb.bat", SearchOption.AllDirectories).First();
 			couchDbBinFolder = startCouchDbBatchFile.Directory;
 			couchAddress = settings.EndpointToListenOn.ToHttpUri();
 			couchApi = Factory.CreateCouchApi(couchAddress);
@@ -52,12 +50,12 @@ namespace CouchDude.Bootstrapper
 			});
 
 			erlProcess = WaitForErlToBeUp();
+			erlProcess.StartInfo.RedirectStandardError = true;
+			erlProcess.StartInfo.RedirectStandardInput = true;
 			erlProcess.OutputDataReceived += LogInfo;
 			erlProcess.ErrorDataReceived += LogError;
 
 			WaitTillResponding();
-			
-			dbReplicator = new CouchDBReplicator(settings);
 		}
 
 		/// <summary>Проверяет поднята ли CouchDB.</summary>
@@ -84,39 +82,20 @@ namespace CouchDude.Bootstrapper
 			}
 		}
 
-		/// <summary>Updates interinstance replication state.</summary>
-		public void UpdateReplicationState()
+		private bool CheckIfCouchDBIsResponding()
 		{
-			if(dbReplicator != null)
-				dbReplicator.UpdateReplicationState();
-		}
-
-		/// <summary>Watches for CouchDB process to be up forever restarting it if needed.</summary>
-		public void WatchForever()
-		{
-			while (true)
+			var webClient = new WebClient();
+			try
 			{
-				if(!ProcessIsUp)
-				{
-					Log.Error("CouchDB process exited unexpectedly. Restarting...");
-					Start();
-					Log.Warn("CouchDB have restarted after crush");
-				}
-
-				if (!CouchDBIsResponding)
-				{
-					Log.Error("CouchDB process is unresponsive. Restarting...");
-					TerminateIfUp();
-					Start();
-					Log.Warn("CouchDB have restarted after being terminated");
-				}
-
-				Thread.Sleep(5000);
+				var response = webClient.DownloadString(settings.EndpointToListenOn.ToHttpUri());
+				Log.InfoFormat("CouchDB have responded: \"{0}\"", response);
+				return true;
+			}
+			catch (Exception)
+			{
+				return false;
 			}
 		}
-
-
-		private bool CouchDBIsResponding { get { return couchApi.Synchronously.CheckIfUp(); } }
 
 		/// <summary>Тормозит текущий поток до тех пор пока CouchDB не отвечает по HTTP.</summary>
 		private void WaitTillResponding()
@@ -124,7 +103,7 @@ namespace CouchDude.Bootstrapper
 			var pingAddress = settings.EndpointToListenOn.ToHttpUri();
 			Log.InfoFormat("Wating for CouchDB to respond on {0}", pingAddress);
 
-			while (!CouchDBIsResponding)
+			while (!CheckIfCouchDBIsResponding())
 				Thread.Sleep(TimeSpan.FromSeconds(50));
 
 			Log.InfoFormat("CouchDB is up");

@@ -16,8 +16,15 @@ namespace CouchDude.Bootstrapper
 		/// <summary>Initializes, sets up and runs CouchDB (+couchdb-lucene) instance.</summary>
 		public static CouchDBWatchdog Bootstrap(BootstrapSettings settings)
 		{
+			settings.Lock();
+
 			if(RunStartupTasks(settings))
-				return new CouchDBWatchdog(settings);
+			{
+				var couchDBWatchdog = new CouchDBWatchdog(settings);
+				couchDBWatchdog.Start();
+				CouchDBReplicator.UpdateReplicationState(settings.EndpointToListenOn, settings.ReplicationSettings);
+				return couchDBWatchdog;
+			}
 			return null;
 		}
 
