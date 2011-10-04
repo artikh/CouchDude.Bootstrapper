@@ -41,6 +41,7 @@
     <Reference Include="Ionic.Zip">
       <HintPath>..\..\packages\DotNetZip.1.9.1.8\lib\net20\Ionic.Zip.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Net.Http, Version=0.3.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
@@ -52,7 +53,7 @@
     <Compile Include="BootstrapSettings.cs" />
     <Compile Include="CouchDBBootstraper.cs" />
     <Compile Include="CouchDBReplicator.cs" />
-    <Compile Include="CouchDBWatchdog.cs" />
+    <Compile Include="CouchDBStarter.cs" />
     <Compile Include="ExtractCouchDbTask.cs" />
     <Compile Include="IniFile.cs" />
     <Compile Include="IStartupTask.cs" />

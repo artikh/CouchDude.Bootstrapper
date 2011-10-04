@@ -57,7 +57,13 @@ namespace CouchDude.Bootstrapper
 			var creationTasks = (
 				from dbToReplicate in databasesToReplicate
 				let dbApi = couchApi.Db(dbToReplicate)
-				select dbApi.RequestInfo().ContinueWith(t => !t.Result.Exists ? dbApi.Create() : null).Unwrap()
+				select dbApi.RequestInfo()
+					.ContinueWith(t => {
+				    if (!t.Result.Exists) 
+							return dbApi.Create();
+				    else 
+							return null;
+				  }).Unwrap()
 			).ToArray();
 
 			Task.WaitAll(creationTasks);

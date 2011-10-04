@@ -14,13 +14,13 @@ namespace CouchDude.Bootstrapper
 		private static readonly ILog Log = LogManager.GetLogger(typeof(CouchDBBootstraper));
 
 		/// <summary>Initializes, sets up and runs CouchDB (+couchdb-lucene) instance.</summary>
-		public static CouchDBWatchdog Bootstrap(BootstrapSettings settings)
+		public static CouchDBStarter Bootstrap(BootstrapSettings settings)
 		{
 			settings.Lock();
 
 			if(RunStartupTasks(settings))
 			{
-				var couchDBWatchdog = new CouchDBWatchdog(settings);
+				var couchDBWatchdog = new CouchDBStarter(settings);
 				couchDBWatchdog.Start();
 				CouchDBReplicator.UpdateReplicationState(settings.EndpointToListenOn, settings.ReplicationSettings);
 				return couchDBWatchdog;
