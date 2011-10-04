@@ -54,24 +54,13 @@ namespace CouchDude.Bootstrapper
 
 		private static void CreateDatabases(ICouchApi couchApi, IEnumerable<string> databasesToReplicate)
 		{
-			var creationTasks =
+			var creationTasks = (
 				from dbToReplicate in databasesToReplicate
 				let dbApi = couchApi.Db(dbToReplicate)
-				select dbApi.RequestInfo().ContinueWith(
-					t => {
-						if (!t.Result.Exists)
-							try
-							{
-								dbApi.Synchronously.Create();
-							}
-							catch (CouchCommunicationException)
-							{
-								/*DB have been created concurrently*/
-							}
-					}
-					);
+				select dbApi.RequestInfo().ContinueWith(t => !t.Result.Exists ? dbApi.Create() : null).Unwrap()
+			).ToArray();
 
-			Task.WaitAll(creationTasks.ToArray());
+			Task.WaitAll(creationTasks);
 		}
 
 		static string GetDescriptorId(Uri remoteCouchDBBaseAddress, string databaseName)
