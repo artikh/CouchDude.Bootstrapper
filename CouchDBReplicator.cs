@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using Common.Logging;
 
 
@@ -28,9 +25,8 @@ namespace CouchDude.Bootstrapper
 
 			var descriptorsToCreate = (
 				from endpoint in settings.EndPointsToReplicateTo
-				where endpoint != localEndPoint
-				let endpointUri = endpoint.ToHttpUri()
 				from dbName in settings.DatabasesToReplicate
+				let endpointUri = endpoint.ToHttpUri()
 				let descriptorId = GetDescriptorId(endpointUri, dbName)
 				where !existingReplicationDescriptorIds.Contains(descriptorId)
 				let descriptor = new ReplicationTaskDescriptor {
@@ -54,19 +50,12 @@ namespace CouchDude.Bootstrapper
 
 		private static void CreateDatabases(ICouchApi couchApi, IEnumerable<string> databasesToReplicate)
 		{
-			var creationTasks = (
-				from dbToReplicate in databasesToReplicate
-				let dbApi = couchApi.Db(dbToReplicate)
-				select dbApi.RequestInfo()
-					.ContinueWith(t => {
-				    if (!t.Result.Exists) 
-							return dbApi.Create();
-				    else 
-							return null;
-				  }).Unwrap()
-			).ToArray();
-
-			Task.WaitAll(creationTasks);
+			foreach (var dbToReplicateName in databasesToReplicate)
+			{
+				var dbApi = couchApi.Db(dbToReplicateName);
+				if(!dbApi.Synchronously.RequestInfo().Exists)
+					dbApi.Synchronously.Create();
+			}
 		}
 
 		static string GetDescriptorId(Uri remoteCouchDBBaseAddress, string databaseName)

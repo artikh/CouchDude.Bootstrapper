@@ -14,43 +14,28 @@ namespace CouchDude.Bootstrapper
 		private static readonly ILog Log = LogManager.GetLogger(typeof(CouchDBBootstraper));
 
 		/// <summary>Initializes, sets up and runs CouchDB (+couchdb-lucene) instance.</summary>
-		public static CouchDBStarter Bootstrap(BootstrapSettings settings)
+		public static void Bootstrap(BootstrapSettings settings)
 		{
 			settings.Lock();
 
-			if(RunStartupTasks(settings))
-			{
-				var couchDBWatchdog = new CouchDBStarter(settings);
-				couchDBWatchdog.Start();
-				CouchDBReplicator.UpdateReplicationState(settings.EndpointToListenOn, settings.ReplicationSettings);
-				return couchDBWatchdog;
-			}
-			return null;
+			RunStartupTasks(settings);
+			new CouchDBStarter(settings).Start();
+			CouchDBReplicator.UpdateReplicationState(settings.EndpointToListenOn, settings.ReplicationSettings);
 		}
 
-		private static bool RunStartupTasks(BootstrapSettings settings)
+		private static void RunStartupTasks(BootstrapSettings settings)
 		{
-			try
-			{
-				var tasks =
-					Assembly.GetExecutingAssembly()
-						.GetTypes()
-						.Where(t => typeof(IStartupTask).IsAssignableFrom(t))
-						.Where(t => !t.IsAbstract)
-						.Select(Activator.CreateInstance)
-						.Cast<IStartupTask>()
-						.ToDictionary(t => t.Name, t => t);
+			var tasks =
+				Assembly.GetExecutingAssembly()
+					.GetTypes()
+					.Where(t => typeof(IStartupTask).IsAssignableFrom(t))
+					.Where(t => !t.IsAbstract)
+					.Select(Activator.CreateInstance)
+					.Cast<IStartupTask>()
+					.ToDictionary(t => t.Name, t => t);
 
-				var rootTask = tasks.Values.First(t => t.Name == "Root");
-				ExecuteTaskRecursively(rootTask, tasks, new HashSet<string>(), settings);
-			}
-			catch (Exception e)
-			{
-				Log.Error(e);
-				return false;
-			}
-
-			return true;
+			var rootTask = tasks.Values.First(t => t.Name == "Root");
+			ExecuteTaskRecursively(rootTask, tasks, new HashSet<string>(), settings);
 		}
 
 		private static void ExecuteTaskRecursively(

@@ -45,32 +45,32 @@ namespace CouchDude.Bootstrapper
 			WaitTillResponding();
 		}
 		
-		private static Task<bool> IsResponding(HttpClient httpClient, Uri couchDBUri)
-		{
-			return httpClient
-				.GetAsync(couchDBUri)
-				.ContinueWith(
-					requestTask => {
-						if (requestTask.IsFaulted)
-							return Task.Factory.StartNew(() => false);
-						else if (requestTask.Result.IsSuccessStatusCode)
-							return Task.Factory.StartNew(() => true);
-						else
-							return IsResponding(httpClient, couchDBUri);
-					})
-				.Unwrap();
-		}
-
 		/// <summary>Blocks current thread until CouchDB is responding OK.</summary>
-		public void WaitTillResponding()
+		private void WaitTillResponding()
 		{
 			var pingAddress = settings.EndpointToListenOn.ToHttpUri();
 			Log.InfoFormat("Wating for CouchDB to respond on {0}", pingAddress);
 
 			using (var httpClient = new HttpClient())
-				IsResponding(httpClient, pingAddress).Wait(IsRespondingTimeout);
-
-			Log.InfoFormat("CouchDB is up");
+			{
+				var stopwatch = new Stopwatch();
+				stopwatch.Start();
+				while (true)
+				{
+					if(stopwatch.ElapsedMilliseconds > IsRespondingTimeout)	
+						throw new Exception(string.Format("CouchDB has not responded for {0} milliseconds", stopwatch.ElapsedMilliseconds));
+					try
+					{
+						var response = httpClient.Get(pingAddress);
+						if (response.IsSuccessStatusCode)
+						{
+							Log.InfoFormat("CouchDB is up and avaliable at {0}", pingAddress);
+							return;
+						}
+					}
+					catch (HttpRequestException) { }
+				}
+			}
 		}
 	}
 }

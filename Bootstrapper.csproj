@@ -22,7 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DocumentationFile>bin\Debug\CouchDude.Bootstrapper.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\CouchDude.Bootstrapper.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,7 +32,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DocumentationFile>bin\Release\CouchDude.Bootstrapper.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\CouchDude.Bootstrapper.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Common.Logging">
@@ -41,7 +41,18 @@
     <Reference Include="Ionic.Zip">
       <HintPath>..\..\packages\DotNetZip.1.9.1.8\lib\net20\Ionic.Zip.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Net.Http, Version=0.3.0.0, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.Json, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\JsonValue.0.5.0\lib\40\Microsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Net.Http, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\HttpClient.0.5.0\lib\40\Microsoft.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Net.Http.Formatting, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\HttpClient.0.5.0\lib\40\Microsoft.Net.Http.Formatting.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Server.Common, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\JsonValue.0.5.0\lib\40\Microsoft.Server.Common.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />

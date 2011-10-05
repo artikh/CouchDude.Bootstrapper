@@ -56,7 +56,7 @@ namespace CouchDude.Bootstrapper
 			iniFile.WriteValue("local", "url", baseUrl.ToString());
 		}
 
-		static void AddCouchDBLuceneHooks(IniFile iniFile, DirectoryInfo couchDBLuceneDirectory, int port)
+		static void AddCouchDBLuceneHooks(IniFile iniFile, FileSystemInfo couchDBLuceneDirectory, int port)
 		{
 			var luceneRunScriptFullName = Path.Combine(couchDBLuceneDirectory.FullName, @"bin\run.bat");
 
