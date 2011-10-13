@@ -5,9 +5,12 @@
     <ConfigurationSettings>
       <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="UseDevelopmentStorage=true" />
       <Setting name="CouchDB.DatabasesToReplicate" value="testdb1;testdb2" />
-      <Setting name="CouchDB.CouchDBDistributive" value="couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip" />
-      <Setting name="CouchDB.CouchDBLuceneDistributive" value="couchdb-lucene-0.7.0.zip" />
-      <Setting name="CouchDB.JreDistributive" value="jre6.zip" />
+			<Setting name="CouchDB.CouchDBDistributive"
+							 value="https://mecastotest.blob.core.windows.net/destributives/couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip" />
+			<Setting name="CouchDB.CouchDBLuceneDistributive"
+							 value="https://mecastotest.blob.core.windows.net/destributives/couchdb-lucene-0.7.0.zip" />
+			<Setting name="CouchDB.JreDistributive"
+							 value="https://mecastotest.blob.core.windows.net/destributives/jre6.zip" />
       <Setting name="CouchDB.UseCloudDrive" value="False" />
       <Setting name="CouchDB.CloudDrive.BlobContainer" value="" />
       <Setting name="CouchDB.CloudDrive.BlobName" value="" />

@@ -16,6 +16,76 @@ using Microsoft.WindowsAzure.StorageClient;
 
 namespace CouchDude.Bootstrapper.Azure
 {
+	static class GetDistributiveTask
+	{
+		public static Task<FileInfo> Start(string distributiveNameOrUrl)
+		{
+			Uri distributiveUri;
+			if (Uri.TryCreate(distributiveNameOrUrl, UriKind.Absolute, out distributiveUri))
+				return DownloadFile(distributiveUri);
+			else
+				return GetLocalFile(distributiveNameOrUrl);
+		}
+
+		public static Task<FileInfo> DownloadFile(Uri distributiveUri)
+		{
+			var httpClient = new HttpClient();
+			var requestMessage = new HttpRequestMessage(HttpMethod.Get, distributiveUri);
+			return httpClient
+				.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead)
+				.ContinueWith(
+					getDistributiveTask => {
+					  var response = getDistributiveTask.Result;
+					  response.EnsureSuccessStatusCode();
+					  var tempFile = new FileInfo(Path.Combine(Path.GetTempFileName(), ".zip"));
+					  var tempFileWriteStream = tempFile.OpenWrite();
+						return response.Content
+							.CopyToAsync(tempFileWriteStream)
+							.ContinueWith(
+								copyTask => {
+									copyTask.Wait(); // ensuring exception propagated (is it nessesary?)
+									tempFileWriteStream.Close();
+									return tempFile;
+								});
+						})
+				.Unwrap()
+				.ContinueWith(
+					downloadTask => {
+					  httpClient.Dispose();
+					  return downloadTask.Result;
+					});
+		}
+
+		public static Task<FileInfo> GetLocalFile(string distributiveNameOrUrl)
+		{
+			return Task.Factory.StartNew(
+				() => {
+				      	var roleRootDirName =
+				      		Environment.GetEnvironmentVariable("RoleRoot");
+				      	Debug.Assert(roleRootDirName != null);
+				      	if (roleRootDirName.EndsWith(Path.VolumeSeparatorChar.ToString()))
+				      		roleRootDirName += Path.DirectorySeparatorChar;
+
+				      	var binDirectory =
+				      		new DirectoryInfo(
+				      			Path.Combine(roleRootDirName, "approot", "bin"));
+				      	if (!binDirectory.Exists) // i.e. it's worker role, not web role
+				      		binDirectory =
+				      			new DirectoryInfo(Path.Combine(roleRootDirName, "approot"));
+
+				      	var distributiveFile = new FileInfo(
+				      		Path.Combine(binDirectory.FullName, distributiveNameOrUrl));
+
+				      	if (!distributiveFile.Exists)
+				      		throw new Exception(
+				      			String.Format(
+				      				"Distributive file {0} have not been found. Check \"Copy to Output Directory\" property is set to \"Copy always\"",
+				      				distributiveFile.FullName));
+				      	return distributiveFile;
+				});
+		}
+	}
+
 	/// <summary>Initializes CouchDB background process conventionally in Windows Azure worker or web role environment.</summary>
 	public static class CouchDBAzureBootstrapper
 	{
@@ -83,9 +153,9 @@ namespace CouchDude.Bootstrapper.Azure
 					var logDir = GetSubDirectory(localResource, LogDirName);
 					var binDir = GetSubDirectory(localResource, ExecutableDirName);
 
-					var getCouchDBDistributiveTask = GetDistributive(couchDBDistributive);
-					var getCouchDBLuceneDistributiveTask = GetDistributive(couchDBLuceneDistributive);
-					var getJreDistributiveTask = GetDistributive(jreDistributive);
+					var getCouchDBDistributiveTask = GetDistributiveTask.Start(couchDBDistributive);
+					var getCouchDBLuceneDistributiveTask = GetDistributiveTask.Start(couchDBLuceneDistributive);
+					var getJreDistributiveTask = GetDistributiveTask.Start(jreDistributive);
 					var getDataDirTask = useCloudDrive
 						? Task.Factory.StartNew(() => InitCloudDrive(cloudDriveSettings))
 						: Task.Factory.StartNew(() => GetSubDirectory(localResource, DataDirName));
@@ -116,72 +186,6 @@ namespace CouchDude.Bootstrapper.Azure
 		public static void StartAndWaitForResult(int timeout = DefaultInitializationTimeout)
 		{
 			Start().Wait(timeout);
-		}
-
-		private static Task<FileInfo> GetDistributive(string distributiveNameOrUrl)
-		{
-			Uri distributiveUri;
-			if (Uri.TryCreate(distributiveNameOrUrl, UriKind.Absolute, out distributiveUri))
-				return DownloadFile(distributiveUri);
-			else
-				return GetLocalFile(distributiveNameOrUrl);
-		}
-
-		private static Task<FileInfo> DownloadFile(Uri distributiveUri)
-		{
-			var httpClient = new HttpClient();
-			return httpClient
-				.GetAsync(distributiveUri)
-				.ContinueWith(
-					getDistributiveTask => {
-						var response = getDistributiveTask.Result;
-						response.EnsureSuccessStatusCode();
-						var tempFile = new FileInfo(Path.Combine(Path.GetTempFileName(), ".zip"));
-						var tempFileWriteStream = tempFile.OpenWrite();
-						return response.Content
-							.CopyToAsync(tempFileWriteStream)
-							.ContinueWith(
-								copyTask => {
-									copyTask.Wait(); // ensuring exception propagated (is it nessesary?)
-									tempFileWriteStream.Close();
-									return tempFile;
-								});
-					})
-				.Unwrap()
-				.ContinueWith(
-					downloadTask => {
-						httpClient.Dispose();
-						return downloadTask.Result;
-					});
-		}
-
-		private static Task<FileInfo> GetLocalFile(string distributiveNameOrUrl)
-		{
-			return Task.Factory.StartNew(
-				() => {
-					var roleRootDirName =
-						Environment.GetEnvironmentVariable("RoleRoot");
-					Debug.Assert(roleRootDirName != null);
-					if (roleRootDirName.EndsWith(Path.VolumeSeparatorChar.ToString()))
-						roleRootDirName += Path.DirectorySeparatorChar;
-
-					var binDirectory =
-						new DirectoryInfo(
-							Path.Combine(roleRootDirName, "approot", "bin"));
-					if (!binDirectory.Exists) // i.e. it's worker role, not web role
-						binDirectory =
-							new DirectoryInfo(Path.Combine(roleRootDirName, "approot"));
-
-					var distributiveFile = new FileInfo(
-						Path.Combine(binDirectory.FullName, distributiveNameOrUrl));
-
-					if (!distributiveFile.Exists)
-						throw new Exception(
-							string.Format(
-								"Distributive file {0} have not been found. Check \"Copy to Output Directory\" property is set to \"Copy always\"",
-								distributiveFile.FullName));
-					return distributiveFile;
-				});
 		}
 
 		private static DirectoryInfo InitCloudDrive(CloudDriveSettings settings)
