@@ -8,14 +8,12 @@ namespace BootstrapperTestWorker
 {
 	public class WorkerRole : RoleEntryPoint
 	{
-		private const int InitializationTimeout = 60000;
-
 		public override bool OnStart()
 		{
 			// Set the maximum number of concurrent connections 
 			ServicePointManager.DefaultConnectionLimit = 12;
 
-			new CouchDBAzureBootstrapper().Start().Wait(InitializationTimeout);
+			CouchDBAzureBootstrapper.StartAndWaitForResult();
 			return true;
 		}
 

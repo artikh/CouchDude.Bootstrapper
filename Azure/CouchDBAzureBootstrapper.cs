@@ -17,7 +17,7 @@ using Microsoft.WindowsAzure.StorageClient;
 namespace CouchDude.Bootstrapper.Azure
 {
 	/// <summary>Initializes CouchDB background process conventionally in Windows Azure worker or web role environment.</summary>
-	public class CouchDBAzureBootstrapper
+	public static class CouchDBAzureBootstrapper
 	{
 		const string ConfigPrefix = "CouchDB.";
 		const string DatabasesToReplicateConfigOption             = ConfigPrefix + "DatabasesToReplicate";
@@ -33,13 +33,14 @@ namespace CouchDude.Bootstrapper.Azure
 		const string CloudDriveConnectionStringConfigOption       = CloudDriveConfigPrefix + "ConnectionString";
 		const string CloudDriveInitCacheConfigOption              = CloudDriveConfigPrefix + "InitCache";
 		const string CloudDriveCacheLocalResourceNameConfigOption = CloudDriveConfigPrefix + "CacheResourceName";
-
-
+		
 		const string InstanceEndpointName = "CouchDB";
 		const string LocalResourceName    = "CouchDB";
 		const string DataDirName          = "data";
 		const string LogDirName           = "logs";
 		const string ExecutableDirName    = "bin";
+
+		private const int DefaultInitializationTimeout = 60000;
 
 		static readonly ILog Log = LogManager.GetCurrentClassLogger();
 
@@ -54,7 +55,7 @@ namespace CouchDude.Bootstrapper.Azure
 		}
 
 		/// <summary>Starts CouchDB initialization task.</summary>
-		public Task Start()
+		public static Task Start()
 		{
 			if (!RoleEnvironment.IsAvailable)
 				throw new InvalidOperationException(
@@ -109,6 +110,12 @@ namespace CouchDude.Bootstrapper.Azure
 
 					CouchDBBootstraper.Bootstrap(bootstrapSettings);
 				});
+		}
+
+		/// <summary>Starts CouchDB initialization task and waits for result.</summary>
+		public static void StartAndWaitForResult(int timeout = DefaultInitializationTimeout)
+		{
+			Start().Wait(timeout);
 		}
 
 		private static Task<FileInfo> GetDistributive(string distributiveNameOrUrl)
