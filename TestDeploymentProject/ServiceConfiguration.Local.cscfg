@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ServiceConfiguration serviceName="CouchDudeAzureBootstrapperTest" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="1" osVersion="*">
+  <Role name="TestWorker">
+    <Instances count="2" />
+    <ConfigurationSettings>
+      <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="UseDevelopmentStorage=true" />
+      <Setting name="CouchDB.DatabasesToReplicate" value="testdb1;testdb2" />
+      <Setting name="CouchDB.CouchDBDistributive" value="couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip" />
+      <Setting name="CouchDB.CouchDBLuceneDistributive" value="couchdb-lucene-0.7.0.zip" />
+      <Setting name="CouchDB.JreDistributive" value="jre6.zip" />
+      <Setting name="CouchDB.UseCloudDrive" value="False" />
+      <Setting name="CouchDB.CloudDrive.BlobContainer" value="" />
+      <Setting name="CouchDB.CloudDrive.BlobName" value="" />
+      <Setting name="CouchDB.CloudDrive.BlobSize" value="" />
+      <Setting name="CouchDB.CloudDrive.ConnectionString" value="" />
+      <Setting name="CouchDB.CloudDrive.InitCache" value="" />
+      <Setting name="CouchDB.CloudDrive.CacheResourceName" value="" />
+    </ConfigurationSettings>
+  </Role>
+</ServiceConfiguration>

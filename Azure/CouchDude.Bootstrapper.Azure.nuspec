@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>CouchDude.Bootstrapper.Azure</id>
+    <version>$version$</version>
+    <authors>Artem Tikhomirov</authors>
+    <owners>Artem Tikhomirov</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0	</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>
+		CouchDude Bootstrapper.Azure initializes, configures and runs instance of Apache CouchDB with couchdb-lucene 
+        on Windows Azure Web or Worker instance.
+	</description>
+    <releaseNotes>This is pre-release version of the library and APIs are subject to change.</releaseNotes>
+    <copyright>Copyright 2011</copyright>
+	<tags>couchdb</tags>
+    <dependencies>
+		<dependency id="Common.Logging" version="2.0.0" />
+		<dependency id="HttpClient" version="0.5.0" />
+		<dependency id="JsonValue" version="0.5.0" />
+        <dependency id="Newtonsoft.Json" version="4.0.3" />
+        <dependency id="DotNetZip" version="1.9.1.8" />
+        <dependency id="CouchDude" version="$version$" />
+        <dependency id="CouchDude.Bootstrapper" version="$version$" />
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Microsoft.WindowsAzure.CloudDrive, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+      <frameworkAssembly assemblyName="Microsoft.WindowsAzure.ServiceRuntime, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL"  />
+      <frameworkAssembly assemblyName="Microsoft.WindowsAzure.StorageClient, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL"  />
+    </frameworkAssemblies>
+  </metadata>
+</package>
