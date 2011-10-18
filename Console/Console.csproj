@@ -39,8 +39,8 @@
     <DocumentationFile>bin\Release\CouchDude.Bootstrapper.Console.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CLAP, Version=1.70.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\CLAP.1.70\lib\net35\CLAP.dll</HintPath>
+    <Reference Include="CLAP">
+      <HintPath>..\packages\CLAP.2.0\lib\net35\CLAP.dll</HintPath>
     </Reference>
     <Reference Include="Common.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
       <HintPath>..\packages\Common.Logging.2.0.0\lib\2.0\Common.Logging.dll</HintPath>
@@ -77,7 +77,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

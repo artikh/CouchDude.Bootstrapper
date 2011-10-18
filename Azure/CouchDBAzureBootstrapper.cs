@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Logging;
@@ -16,76 +15,6 @@ using Microsoft.WindowsAzure.StorageClient;
 
 namespace CouchDude.Bootstrapper.Azure
 {
-	static class GetDistributiveTask
-	{
-		public static Task<FileInfo> Start(string distributiveNameOrUrl)
-		{
-			Uri distributiveUri;
-			if (Uri.TryCreate(distributiveNameOrUrl, UriKind.Absolute, out distributiveUri))
-				return DownloadFile(distributiveUri);
-			else
-				return GetLocalFile(distributiveNameOrUrl);
-		}
-
-		public static Task<FileInfo> DownloadFile(Uri distributiveUri)
-		{
-			var httpClient = new HttpClient();
-			var requestMessage = new HttpRequestMessage(HttpMethod.Get, distributiveUri);
-			return httpClient
-				.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead)
-				.ContinueWith(
-					getDistributiveTask => {
-					  var response = getDistributiveTask.Result;
-					  response.EnsureSuccessStatusCode();
-					  var tempFile = new FileInfo(Path.Combine(Path.GetTempFileName(), ".zip"));
-					  var tempFileWriteStream = tempFile.OpenWrite();
-						return response.Content
-							.CopyToAsync(tempFileWriteStream)
-							.ContinueWith(
-								copyTask => {
-									copyTask.Wait(); // ensuring exception propagated (is it nessesary?)
-									tempFileWriteStream.Close();
-									return tempFile;
-								});
-						})
-				.Unwrap()
-				.ContinueWith(
-					downloadTask => {
-					  httpClient.Dispose();
-					  return downloadTask.Result;
-					});
-		}
-
-		public static Task<FileInfo> GetLocalFile(string distributiveNameOrUrl)
-		{
-			return Task.Factory.StartNew(
-				() => {
-				      	var roleRootDirName =
-				      		Environment.GetEnvironmentVariable("RoleRoot");
-				      	Debug.Assert(roleRootDirName != null);
-				      	if (roleRootDirName.EndsWith(Path.VolumeSeparatorChar.ToString()))
-				      		roleRootDirName += Path.DirectorySeparatorChar;
-
-				      	var binDirectory =
-				      		new DirectoryInfo(
-				      			Path.Combine(roleRootDirName, "approot", "bin"));
-				      	if (!binDirectory.Exists) // i.e. it's worker role, not web role
-				      		binDirectory =
-				      			new DirectoryInfo(Path.Combine(roleRootDirName, "approot"));
-
-				      	var distributiveFile = new FileInfo(
-				      		Path.Combine(binDirectory.FullName, distributiveNameOrUrl));
-
-				      	if (!distributiveFile.Exists)
-				      		throw new Exception(
-				      			String.Format(
-				      				"Distributive file {0} have not been found. Check \"Copy to Output Directory\" property is set to \"Copy always\"",
-				      				distributiveFile.FullName));
-				      	return distributiveFile;
-				});
-		}
-	}
-
 	/// <summary>Initializes CouchDB background process conventionally in Windows Azure worker or web role environment.</summary>
 	public static class CouchDBAzureBootstrapper
 	{
@@ -106,6 +35,7 @@ namespace CouchDude.Bootstrapper.Azure
 		
 		const string InstanceEndpointName = "CouchDB";
 		const string LocalResourceName    = "CouchDB";
+		const string TempResourceName     = "CouchDB.Temp";
 		const string DataDirName          = "data";
 		const string LogDirName           = "logs";
 		const string ExecutableDirName    = "bin";
@@ -114,7 +44,7 @@ namespace CouchDude.Bootstrapper.Azure
 
 		static readonly ILog Log = LogManager.GetCurrentClassLogger();
 
-		static CouchDBAzureBootstrapper()
+		static CouchDBAzureBootstrapper( )
 		{
 			LogManager.Adapter = new TraceLoggerFactoryAdapter(new NameValueCollection {
 				{ "level", "INFO" },
@@ -123,7 +53,7 @@ namespace CouchDude.Bootstrapper.Azure
 				{ "dateTimeFormat", "yyyy-MM-dd HH:mm:ss:fff" },
 			});
 		}
-
+		
 		/// <summary>Starts CouchDB initialization task.</summary>
 		public static Task Start()
 		{
@@ -142,20 +72,21 @@ namespace CouchDude.Bootstrapper.Azure
 				.GetConfigurationSettingValue(DatabasesToReplicateConfigOption)
 				.Split(new []{';'}, StringSplitOptions.RemoveEmptyEntries);
 			var localResource = RoleEnvironment.GetLocalResource(LocalResourceName);
+			var tempResource = RoleEnvironment.GetLocalResource(TempResourceName);
 			var useCloudDrive =
 				bool.Parse(RoleEnvironment.GetConfigurationSettingValue(UseCloudDriveConfigOption));
 
 			var cloudDriveSettings = useCloudDrive ? CloudDriveSettings.Read() : null;
 
-			return Task.Factory.StartNew(
+			var mainTask = Task.Factory.StartNew(
 				() => {
 					// Preparing environment
 					var logDir = GetSubDirectory(localResource, LogDirName);
 					var binDir = GetSubDirectory(localResource, ExecutableDirName);
 
-					var getCouchDBDistributiveTask = GetDistributiveTask.Start(couchDBDistributive);
-					var getCouchDBLuceneDistributiveTask = GetDistributiveTask.Start(couchDBLuceneDistributive);
-					var getJreDistributiveTask = GetDistributiveTask.Start(jreDistributive);
+					var getCouchDBDistributiveTask = GetDistributiveTask.Start(couchDBDistributive, tempResource.RootPath);
+					var getCouchDBLuceneDistributiveTask = GetDistributiveTask.Start(couchDBLuceneDistributive, tempResource.RootPath);
+					var getJreDistributiveTask = GetDistributiveTask.Start(jreDistributive, tempResource.RootPath);
 					var getDataDirTask = useCloudDrive
 						? Task.Factory.StartNew(() => InitCloudDrive(cloudDriveSettings))
 						: Task.Factory.StartNew(() => GetSubDirectory(localResource, DataDirName));
@@ -172,6 +103,7 @@ namespace CouchDude.Bootstrapper.Azure
 						BinDirectory               = binDir,
 						DataDirectory              = getDataDirTask.Result,
 						LogDirectory               = logDir,
+						TempDirectory              = new DirectoryInfo(tempResource.RootPath),
 						EndpointToListenOn         = localIPEndPoint,
 						SetupCouchDBLucene         = true,
 					};
@@ -180,6 +112,22 @@ namespace CouchDude.Bootstrapper.Azure
 
 					CouchDBBootstraper.Bootstrap(bootstrapSettings);
 				});
+
+			mainTask.ContinueWith(
+				t => {
+					if(t.IsFaulted)
+					{
+						const string sourceName = "Web Deploy Host";
+						const string logName = "Application";
+
+						if (!EventLog.SourceExists(sourceName))
+							EventLog.CreateEventSource(sourceName, logName);
+
+						EventLog.WriteEntry(sourceName, "Error setting up CouchDB:\n" + t.Exception, EventLogEntryType.Error);
+					}
+				});
+
+			return mainTask;
 		}
 
 		/// <summary>Starts CouchDB initialization task and waits for result.</summary>
