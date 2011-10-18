@@ -8,7 +8,6 @@ namespace CouchDude.Bootstrapper
 	public class BootstrapSettings
 	{
 		private DirectoryInfo binDirectory;
-		private DirectoryInfo tempDirectory = new DirectoryInfo(Path.GetTempPath());
 		private DirectoryInfo couchDBDirectory;
 		private DirectoryInfo couchDBluceneDirectory;
 		private DirectoryInfo javaDirectory;
@@ -48,17 +47,6 @@ namespace CouchDude.Bootstrapper
 		{
 			if (!fsItem.Exists)
 				throw new ArgumentException(name + " does not exist: " + fsItem.FullName);
-		}
-
-		/// <summary>Temporary directory to work in.</summary>
-		public DirectoryInfo TempDirectory
-		{
-			get { return tempDirectory; }
-			set
-			{
-				ThrowIfLocked();
-				tempDirectory = value;
-			}
 		}
 
 		/// <summary>Main working directory where CouchDB executables should be located.</summary>

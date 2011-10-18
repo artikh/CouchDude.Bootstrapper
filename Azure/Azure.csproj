@@ -63,7 +63,6 @@
     </Compile>
     <Compile Include="CouchDBAzureBootstrapper.cs" />
     <Compile Include="BlobExtensions.cs" />
-    <Compile Include="GetDistributiveTask.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

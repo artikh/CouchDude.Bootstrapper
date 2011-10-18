@@ -23,7 +23,6 @@
     </Endpoints>
     <LocalResources>
       <LocalStorage name="CouchDB" sizeInMB="1024" cleanOnRoleRecycle="true" />
-      <LocalStorage name="CouchDB.Temp" sizeInMB="1024" cleanOnRoleRecycle="true" />
     </LocalResources>
   </WorkerRole>
 </ServiceDefinition>
