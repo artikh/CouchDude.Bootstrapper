@@ -3,6 +3,8 @@
   <WorkerRole name="TestWorker" vmsize="Small">
     <Imports>
       <Import moduleName="Diagnostics" />
+      <Import moduleName="RemoteAccess" />
+      <Import moduleName="RemoteForwarder" />
     </Imports>
     <ConfigurationSettings>
       <Setting name="CouchDB.DatabasesToReplicate" />
@@ -22,7 +24,9 @@
       <InternalEndpoint name="UnusedInternal" port="88" protocol="http" />
     </Endpoints>
     <LocalResources>
-      <LocalStorage name="CouchDB" sizeInMB="1024" cleanOnRoleRecycle="true" />
+      <LocalStorage name="CouchDB" sizeInMB="2048" cleanOnRoleRecycle="false" />
+      <LocalStorage name="CouchDB.Temp" sizeInMB="2048" cleanOnRoleRecycle="true" />
+      <LocalStorage name="CloudDriveCache" sizeInMB="1024" cleanOnRoleRecycle="false" />
     </LocalResources>
   </WorkerRole>
 </ServiceDefinition>

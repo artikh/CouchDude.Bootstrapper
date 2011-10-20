@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Common.Logging;
 
 namespace CouchDude.Bootstrapper

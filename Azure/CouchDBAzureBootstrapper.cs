@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Common.Logging;
 using Common.Logging.Simple;
 using Microsoft.WindowsAzure;
+using Microsoft.WindowsAzure.Diagnostics;
 using Microsoft.WindowsAzure.ServiceRuntime;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -114,14 +115,17 @@ namespace CouchDude.Bootstrapper.Azure
 
 		static readonly ILog Log = LogManager.GetCurrentClassLogger();
 
-		static CouchDBAzureBootstrapper()
+		/// <summary>Configures CouchDB and couchdb-lucene log transfer.</summary>
+		public static void ConfigureLogTransfer(DirectoriesBufferConfiguration directoriesBufferConfiguration)
 		{
-			LogManager.Adapter = new TraceLoggerFactoryAdapter(new NameValueCollection {
-				{ "level", "INFO" },
-				{ "showLogName", "true" },
-				{ "showDataTime", "true" },
-				{ "dateTimeFormat", "yyyy-MM-dd HH:mm:ss:fff" },
-			});
+			var localResource = RoleEnvironment.GetLocalResource(LocalResourceName);
+			var localResourceDir = new DirectoryInfo(localResource.RootPath);
+			var logDir = GetOrCreateSubdirectory(localResourceDir, LogDirName);
+			directoriesBufferConfiguration.DataSources.Add(
+				new DirectoryConfiguration{
+					Container = "couchdb-logs",
+					Path = logDir.FullName
+				});
 		}
 
 		/// <summary>Starts CouchDB initialization task.</summary>
@@ -150,15 +154,16 @@ namespace CouchDude.Bootstrapper.Azure
 			return Task.Factory.StartNew(
 				() => {
 					// Preparing environment
-					var logDir = GetSubDirectory(localResource, LogDirName);
-					var binDir = GetSubDirectory(localResource, ExecutableDirName);
+				  var localResourceDir = new DirectoryInfo(localResource.RootPath);
+					var logDir = GetOrCreateSubdirectory(localResourceDir, LogDirName);
+					var binDir = GetOrCreateSubdirectory(localResourceDir, ExecutableDirName);
 
 					var getCouchDBDistributiveTask = GetDistributiveTask.Start(couchDBDistributive);
 					var getCouchDBLuceneDistributiveTask = GetDistributiveTask.Start(couchDBLuceneDistributive);
 					var getJreDistributiveTask = GetDistributiveTask.Start(jreDistributive);
 					var getDataDirTask = useCloudDrive
 						? Task.Factory.StartNew(() => InitCloudDrive(cloudDriveSettings))
-						: Task.Factory.StartNew(() => GetSubDirectory(localResource, DataDirName));
+						: Task.Factory.StartNew(() => GetOrCreateSubdirectory(localResourceDir, DataDirName));
 
 					// Waiting for all prepare tasks to finish
 					Task.WaitAll(
@@ -179,7 +184,21 @@ namespace CouchDude.Bootstrapper.Azure
 					bootstrapSettings.ReplicationSettings.EndPointsToReplicateTo = endpointsToReplicateTo;
 
 					CouchDBBootstraper.Bootstrap(bootstrapSettings);
-				});
+				})
+			.ContinueWith(t =>{
+				if(t.IsFaulted && t.Exception != null)
+				{
+					const string sourceName = "CouchDude Azure Bootstarpper";
+					const string logName = "Application";
+
+					if (!EventLog.SourceExists(sourceName))
+						EventLog.CreateEventSource(sourceName, logName);
+
+					EventLog.WriteEntry(sourceName,  "Error occured initializing CouchDB" + t.Exception.ToString(), EventLogEntryType.Error);
+					
+					throw t.Exception;
+				}
+			});
 		}
 
 		/// <summary>Starts CouchDB initialization task and waits for result.</summary>
@@ -194,6 +213,7 @@ namespace CouchDude.Bootstrapper.Azure
 			
 			if (settings.InitCache)
 				DoInitCloudDriveCache(settings.CacheLocalResource);
+			
 
 			var cloudDriveStorageAccount = CloudStorageAccount.Parse(settings.ConnectionString);
 			var blobClient = cloudDriveStorageAccount.CreateCloudBlobClient();
@@ -257,9 +277,10 @@ namespace CouchDude.Bootstrapper.Azure
 				}
 		}
 
-		private static DirectoryInfo GetSubDirectory(LocalResource localResource, string subDirName)
+		private static DirectoryInfo GetOrCreateSubdirectory(DirectoryInfo localResourceDir, string subDirName)
 		{
-			return new DirectoryInfo(localResource.RootPath).CreateSubdirectory(subDirName);
+			var subDirectory = new DirectoryInfo(Path.Combine(localResourceDir.FullName, subDirName));
+			return subDirectory.Exists? subDirectory: localResourceDir.CreateSubdirectory(subDirName);
 		}
 
 		private static IEnumerable<IPEndPoint> GetCouchDBEndpoints(int port)

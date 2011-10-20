@@ -4,7 +4,7 @@ namespace CouchDude.Bootstrapper
 	{
 		public override System.Collections.Generic.IEnumerable<string> Dependencies
 		{
-			get { return new[] { "ExtractCouchDb", "SetAcls", "UpdateIniFile" }; }
+			get { return new[] { "ExtractCouchDb", "SetAcls", "UpdateIniFiles" }; }
 		}
 	}
 }

@@ -1,7 +1,9 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Threading;
 using CouchDude.Bootstrapper.Azure;
+using Microsoft.WindowsAzure.Diagnostics;
 using Microsoft.WindowsAzure.ServiceRuntime;
 
 namespace BootstrapperTestWorker
@@ -12,8 +14,20 @@ namespace BootstrapperTestWorker
 		{
 			// Set the maximum number of concurrent connections 
 			ServicePointManager.DefaultConnectionLimit = 12;
+			var diagnosticsConfiguration = DiagnosticMonitor.GetDefaultInitialConfiguration();
+			diagnosticsConfiguration.WindowsEventLog.ScheduledTransferPeriod = TimeSpan.FromMinutes(1);
+			diagnosticsConfiguration.Logs.ScheduledTransferPeriod = TimeSpan.FromMinutes(1);
+			diagnosticsConfiguration.DiagnosticInfrastructureLogs.ScheduledTransferPeriod = TimeSpan.FromMinutes(1);
+			CouchDBAzureBootstrapper.ConfigureLogTransfer(diagnosticsConfiguration.Directories);
+			diagnosticsConfiguration.Directories.ScheduledTransferPeriod = TimeSpan.FromMinutes(1);
+			DiagnosticMonitor.Start(
+				"Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString",
+				diagnosticsConfiguration);
 
-			CouchDBAzureBootstrapper.StartAndWaitForResult();
+			//try {
+				CouchDBAzureBootstrapper.StartAndWaitForResult();
+			//} catch { }
+
 			return true;
 		}
 
@@ -24,8 +38,8 @@ namespace BootstrapperTestWorker
 
 			while (true)
 			{
-				Thread.Sleep(10000);
-				Trace.WriteLine("Working", "Information");
+				Thread.Sleep(TimeSpan.FromMinutes(5));
+				Trace.WriteLine("Still working", "Information");
 			}
 		}
 	}

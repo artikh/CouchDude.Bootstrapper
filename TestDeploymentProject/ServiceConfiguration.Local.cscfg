@@ -1,23 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ServiceConfiguration serviceName="CouchDudeAzureBootstrapperTest" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="1" osVersion="*">
   <Role name="TestWorker">
-    <Instances count="2" />
+    <Instances count="1" />
     <ConfigurationSettings>
       <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="UseDevelopmentStorage=true" />
       <Setting name="CouchDB.DatabasesToReplicate" value="testdb1;testdb2" />
-			<Setting name="CouchDB.CouchDBDistributive"
-							 value="https://mecastotest.blob.core.windows.net/destributives/couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip" />
-			<Setting name="CouchDB.CouchDBLuceneDistributive"
-							 value="https://mecastotest.blob.core.windows.net/destributives/couchdb-lucene-0.7.0.zip" />
-			<Setting name="CouchDB.JreDistributive"
-							 value="https://mecastotest.blob.core.windows.net/destributives/jre6.zip" />
+      <Setting name="CouchDB.CouchDBDistributive" value="https://mecastotest.blob.core.windows.net/destributives/couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip" />
+      <Setting name="CouchDB.CouchDBLuceneDistributive" value="https://mecastotest.blob.core.windows.net/destributives/couchdb-lucene-0.7.0.zip" />
+      <Setting name="CouchDB.JreDistributive" value="https://mecastotest.blob.core.windows.net/destributives/jre6.zip" />
       <Setting name="CouchDB.UseCloudDrive" value="False" />
-      <Setting name="CouchDB.CloudDrive.BlobContainer" value="" />
-      <Setting name="CouchDB.CloudDrive.BlobName" value="" />
-      <Setting name="CouchDB.CloudDrive.BlobSize" value="" />
-      <Setting name="CouchDB.CloudDrive.ConnectionString" value="" />
-      <Setting name="CouchDB.CloudDrive.InitCache" value="" />
-      <Setting name="CouchDB.CloudDrive.CacheResourceName" value="" />
+      <Setting name="CouchDB.CloudDrive.BlobContainer" value="drives" />
+      <Setting name="CouchDB.CloudDrive.BlobName" value="couchdb-test" />
+      <Setting name="CouchDB.CloudDrive.BlobSize" value="1024" />
+      <Setting name="CouchDB.CloudDrive.ConnectionString" value="UseDevelopmentStorage=true" />
+      <Setting name="CouchDB.CloudDrive.InitCache" value="True" />
+      <Setting name="CouchDB.CloudDrive.CacheResourceName" value="CloudDriveCache" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.Enabled" value="true" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountUsername" value="mecasto" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountEncryptedPassword" value="MIIBpAYJKoZIhvcNAQcDoIIBlTCCAZECAQAxggFNMIIBSQIBADAxMB0xGzAZBgNVBAMTEk1lY2FzdG9BenVyZURlcGxveQIQKfcssXIhlYBP3eAIbq2FsTANBgkqhkiG9w0BAQEFAASCAQAub2iCICV6dgTTHzWQSwB+x53gCAW6Ioy2WTTstpJ17Lg07Or2AwBhO6xsd9YVw67o8QfR7ZMzTpvrRlcvRfs0NBhMW3AVMd2E472A8u4H42oYT4g0KR2rd2LvFfaXEbV8vrkddxb8N56d4q7M0+LwKr5jG63q4y5/OTozuXb2JU2WIXJDhaEmL1ExxwK0dhQiBTDEZqEKJjEBw53RJyLM+IS9lO+9tg1kzFI3y64XaTCTnUJtL33OBlgEo1pdz2aR6Fs7ddrINpUbD0/oRdfKeAn9Mb5rE/+fym2GjXqqEuEYeYNQ9/m8/3KtKqIsGWWfM6P15opzJLrjAAT2XRU2MDsGCSqGSIb3DQEHATAUBggqhkiG9w0DBwQIcOJcvriS/DqAGJ4Gi1QkSSK2x/lDQ+8rXQAbH+AW03rTyg==" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountExpiration" value="2012-02-26T23:59:59.0000000+04:00" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteForwarder.Enabled" value="true" />
     </ConfigurationSettings>
+    <Certificates>
+      <Certificate name="Microsoft.WindowsAzure.Plugins.RemoteAccess.PasswordEncryption" thumbprint="F371138B4F2FD79C698F138F91F051A986D4E9DD" thumbprintAlgorithm="sha1" />
+    </Certificates>
   </Role>
 </ServiceConfiguration>
