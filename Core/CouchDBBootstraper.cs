@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using Common.Logging;
 
@@ -14,13 +15,17 @@ namespace CouchDude.Bootstrapper
 		private static readonly ILog Log = LogManager.GetLogger(typeof(CouchDBBootstraper));
 
 		/// <summary>Initializes, sets up and runs CouchDB (+couchdb-lucene) instance.</summary>
-		public static void Bootstrap(BootstrapSettings settings)
+		public static Action Bootstrap(BootstrapSettings settings)
 		{
 			settings.Lock();
 
 			RunStartupTasks(settings);
-			new CouchDBStarter(settings).Start();
-			CouchDBReplicator.UpdateReplicationState(settings.EndpointToListenOn, settings.ReplicationSettings);
+			var couchDBStarter = new CouchDBStarter(settings);
+			couchDBStarter.Start();
+			CouchDBReplicator.UpdateReplicationState(
+				new IPEndPoint(IPAddress.Loopback, settings.EndpointToListenOn.Port), 
+				settings.ReplicationSettings);
+			return couchDBStarter.ThrowIfExitedUnexpectedly;
 		}
 
 		private static void RunStartupTasks(BootstrapSettings settings)

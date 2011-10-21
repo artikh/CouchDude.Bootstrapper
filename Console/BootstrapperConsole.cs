@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using CLAP;
 using Common.Logging;
@@ -43,11 +44,26 @@ namespace CouchDude.Bootstrapper.Console
 						DatabasesToReplicate = databasesToReplicate ?? new string[0]
 					};
 
-				foreach (var endPoint in replicationSettings.EndPointsToReplicateTo)
-					StartCouchInstance(endPoint.Port - 10, endPoint.Port, replicationSettings);
+				Action[] throwIfExitedUnexpectedlyActions =
+					replicationSettings
+						.EndPointsToReplicateTo
+						.Select(endPoint => StartCouchInstance(endPoint.Port - 10, endPoint.Port, replicationSettings))
+						.ToArray();
 
-				System.Console.Write("Press ENTER to quit:");
-				System.Console.ReadLine();
+				Task.Factory.StartNew(
+					() =>
+						{
+							System.Console.Write("Press ENTER to quit:");
+							System.Console.ReadLine();
+							exit = true;
+						});
+
+				while (!exit)
+				{
+					foreach (var throwIfExitedUnexpectedlyAction in throwIfExitedUnexpectedlyActions)
+						throwIfExitedUnexpectedlyAction();
+					Thread.Sleep(2000);
+				}
 			}
 			catch (Exception e)
 			{
@@ -55,7 +71,9 @@ namespace CouchDude.Bootstrapper.Console
 			}
 		}
 
-		private static void StartCouchInstance(int lucenePort, int port, ReplicationSettings replicationSettings)
+		private static volatile bool exit;
+
+		private static Action StartCouchInstance(int lucenePort, int port, ReplicationSettings replicationSettings)
 		{
 			var storageDir =
 				new DirectoryInfo(Path.Combine(Path.GetTempPath(), "couch-bootstrapper-" + DateTime.Now.Ticks + port));
@@ -70,9 +88,7 @@ namespace CouchDude.Bootstrapper.Console
 
 			var bootstrapSettings = new BootstrapSettings
 			{
-				CouchDBDistributive =
-					new FileInfo(
-						Path.Combine(Environment.CurrentDirectory, "couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip")),
+				CouchDBDistributive = new FileInfo(Path.Combine(Environment.CurrentDirectory, "couchdb-1.1.0.zip")),
 				CouchDBLuceneDistributive =
 					new FileInfo(Path.Combine(Environment.CurrentDirectory, "couchdb-lucene-0.7.0.zip")),
 				JavaDistributive = new FileInfo(Path.Combine(Environment.CurrentDirectory, "jre6.zip")),
@@ -87,7 +103,7 @@ namespace CouchDude.Bootstrapper.Console
 			bootstrapSettings.ReplicationSettings.DatabasesToReplicate = replicationSettings.DatabasesToReplicate;
 			bootstrapSettings.ReplicationSettings.EndPointsToReplicateTo = replicationSettings.EndPointsToReplicateTo;
 
-			CouchDBBootstraper.Bootstrap(bootstrapSettings);
+			return CouchDBBootstraper.Bootstrap(bootstrapSettings);
 		}
 	}
 }

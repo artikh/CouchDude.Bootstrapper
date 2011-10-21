@@ -32,7 +32,8 @@ namespace CouchDude.Bootstrapper
 
 			if (settings.SetupCouchDBLucene)
 			{
-				var couchDBLuceneConfigFileFullName = Path.Combine(settings.CouchDBLuceneDirectory.FullName, @"conf\couchdb-lucene.ini");
+				var couchDBLuceneConfigFileFullName = 
+					Path.Combine(settings.CouchDBLuceneDirectory.FullName, @"conf\couchdb-lucene.ini");
 				var couchdbLuceneIniFile = new IniFile(couchDBLuceneConfigFileFullName);
 
 				// ReSharper disable PossibleInvalidOperationException
@@ -40,7 +41,6 @@ namespace CouchDude.Bootstrapper
 				// ReSharper restore PossibleInvalidOperationException
 
 				UpdateLuceneListeningPort(couchdbLuceneIniFile, port, settings.EndpointToListenOn.ToHttpUri());
-				UpdateLuceneDataDirectory(couchdbLuceneIniFile, Path.Combine(settings.DataDirectory.FullName, "couchdb"));
 				UpdateLuceneLogDirectory(settings.CouchDBLuceneDirectory, settings.LogDirectory.FullName);
 
 				AddCouchDBLuceneHooks(iniFile, settings.CouchDBLuceneDirectory, port);
@@ -63,24 +63,16 @@ namespace CouchDude.Bootstrapper
 
 			// ReSharper disable PossibleNullReferenceException
 			var log4JConfigXml = XDocument.Load(log4JConfigFileName);
-			var fileNameNode =
-				log4JConfigXml
-					.Element("log4j:configuration")
-					.Elements("log4j:appender")
-					.Where(e => e.Attribute("name").Value == "FILE")
-					.Elements("log4j:param")
-					.First(e => e.Attribute("name").Value == "file");
+			XNamespace ns = "http://jakarta.apache.org/log4j/";
+			var rootElement = log4JConfigXml.Element(ns + "configuration");
+			var appenderElements = rootElement.Elements();
+			var fileAppenderElement = appenderElements.First(e => e.Name == "appender" && e.Attribute("name").Value == "FILE");
+			var paramElements = fileAppenderElement.Elements();
+			var fileNameParamElement = paramElements.First(e => e.Name == "param" && e.Attribute("name").Value == "file");
 			// ReSharper restore PossibleNullReferenceException
 
-			fileNameNode.SetAttributeValue("value", logFileName);
+			fileNameParamElement.SetAttributeValue("value", logFileName);
 			log4JConfigXml.Save(log4JConfigFileName);
-		}
-
-		private void UpdateLuceneDataDirectory(IniFile couchdbLuceneIniFile, string dataDirectory)
-		{
-			Log.InfoFormat("Setting couchdb-lucene data directory to {0} in INI file: {1}", dataDirectory, couchdbLuceneIniFile.Path);
-
-			couchdbLuceneIniFile.WriteValue("lucene", "dir", dataDirectory);
 		}
 
 		static void UpdateLuceneListeningPort(IniFile couchdbLuceneIniFile, int port, Uri baseUrl)

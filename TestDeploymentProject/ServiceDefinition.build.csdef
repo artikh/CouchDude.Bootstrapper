@@ -29,7 +29,7 @@
       <Setting name="CouchDB.CloudDrive.CacheResourceName" />
     </ConfigurationSettings>
     <Endpoints>
-      <InputEndpoint name="CouchDB" port="8990" protocol="tcp" />
+      <InputEndpoint name="CouchDB" port="9980" protocol="tcp" />
       <InternalEndpoint name="UnusedInternal" port="88" protocol="http" />
     </Endpoints>
     <LocalResources>

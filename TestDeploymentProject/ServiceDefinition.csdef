@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ServiceDefinition name="CouchDudeAzureBootstrapperTest" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition">
+<ServiceDefinition name="CouchDudeAzureBootstrapperTest" 
+									 xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition">
   <WorkerRole name="TestWorker" vmsize="Small">
     <Imports>
       <Import moduleName="Diagnostics" />
@@ -20,7 +21,7 @@
       <Setting name="CouchDB.CloudDrive.CacheResourceName" />
     </ConfigurationSettings>
     <Endpoints>
-      <InputEndpoint name="CouchDB" port="8990" protocol="tcp" />
+      <InputEndpoint name="CouchDB" port="9980" protocol="tcp" />
       <InternalEndpoint name="UnusedInternal" port="88" protocol="http" />
     </Endpoints>
     <LocalResources>

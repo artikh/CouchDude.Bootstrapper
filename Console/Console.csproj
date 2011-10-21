@@ -64,7 +64,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip">
+    <Content Include="couchdb-1.1.0.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="couchdb-lucene-0.7.0.zip">

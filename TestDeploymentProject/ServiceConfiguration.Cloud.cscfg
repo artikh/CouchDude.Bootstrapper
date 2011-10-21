@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ServiceConfiguration serviceName="CouchDudeAzureBootstrapperTest" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="1" osVersion="*">
+<ServiceConfiguration 
+		serviceName="CouchDudeAzureBootstrapperTest"
+		osFamily="2"
+		osVersion="*"
+		xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration">
   <Role name="TestWorker">
     <Instances count="2" />
     <ConfigurationSettings>

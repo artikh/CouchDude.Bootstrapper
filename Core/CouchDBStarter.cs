@@ -17,6 +17,7 @@ namespace CouchDude.Bootstrapper
 
 		private readonly DirectoryInfo couchDbBinFolder;
 		private readonly FileInfo startCouchDbBatchFile;
+		private Process batchProcess;
 
 		/// <constructor />
 		public CouchDBStarter(BootstrapSettings settings)
@@ -36,12 +37,21 @@ namespace CouchDude.Bootstrapper
 
 			Environment.SetEnvironmentVariable("ERL", "erl.exe");
 
-			Process.Start(new ProcessStartInfo(startCouchDbBatchFile.FullName, couchDbBinFolder.FullName) {
+			var processStartInfo = new ProcessStartInfo(startCouchDbBatchFile.FullName, couchDbBinFolder.FullName) {
 				CreateNoWindow = true,
 				UseShellExecute = false
-			});
+			};
+			
+			batchProcess = Process.Start(processStartInfo);
 
 			WaitTillResponding();
+		}
+
+		/// <summary>Throws <see cref="InvalidOperationException"/> if CouchDB launch script process exites.</summary>
+		public void ThrowIfExitedUnexpectedly()
+		{
+			if (batchProcess.HasExited)
+				throw new InvalidOperationException("couchdb.bat has exited with exit code " + batchProcess.ExitCode);
 		}
 		
 		/// <summary>Blocks current thread until CouchDB is responding OK.</summary>
@@ -56,6 +66,8 @@ namespace CouchDude.Bootstrapper
 				stopwatch.Start();
 				while (true)
 				{
+					ThrowIfExitedUnexpectedly();
+
 					if(stopwatch.ElapsedMilliseconds > IsRespondingTimeout)	
 						throw new Exception(string.Format("CouchDB has not responded for {0} milliseconds", stopwatch.ElapsedMilliseconds));
 					try

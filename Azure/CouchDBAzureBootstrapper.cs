@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Logging;
-using Common.Logging.Simple;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.Diagnostics;
 using Microsoft.WindowsAzure.ServiceRuntime;
@@ -17,76 +14,6 @@ using Microsoft.WindowsAzure.StorageClient;
 
 namespace CouchDude.Bootstrapper.Azure
 {
-	static class GetDistributiveTask
-	{
-		public static Task<FileInfo> Start(string distributiveNameOrUrl)
-		{
-			Uri distributiveUri;
-			if (Uri.TryCreate(distributiveNameOrUrl, UriKind.Absolute, out distributiveUri))
-				return DownloadFile(distributiveUri);
-			else
-				return GetLocalFile(distributiveNameOrUrl);
-		}
-
-		public static Task<FileInfo> DownloadFile(Uri distributiveUri)
-		{
-			var httpClient = new HttpClient();
-			var requestMessage = new HttpRequestMessage(HttpMethod.Get, distributiveUri);
-			return httpClient
-				.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead)
-				.ContinueWith(
-					getDistributiveTask => {
-					  var response = getDistributiveTask.Result;
-					  response.EnsureSuccessStatusCode();
-					  var tempFile = new FileInfo(Path.Combine(Path.GetTempFileName(), ".zip"));
-					  var tempFileWriteStream = tempFile.OpenWrite();
-						return response.Content
-							.CopyToAsync(tempFileWriteStream)
-							.ContinueWith(
-								copyTask => {
-									copyTask.Wait(); // ensuring exception propagated (is it nessesary?)
-									tempFileWriteStream.Close();
-									return tempFile;
-								});
-						})
-				.Unwrap()
-				.ContinueWith(
-					downloadTask => {
-					  httpClient.Dispose();
-					  return downloadTask.Result;
-					});
-		}
-
-		public static Task<FileInfo> GetLocalFile(string distributiveNameOrUrl)
-		{
-			return Task.Factory.StartNew(
-				() => {
-				      	var roleRootDirName =
-				      		Environment.GetEnvironmentVariable("RoleRoot");
-				      	Debug.Assert(roleRootDirName != null);
-				      	if (roleRootDirName.EndsWith(Path.VolumeSeparatorChar.ToString()))
-				      		roleRootDirName += Path.DirectorySeparatorChar;
-
-				      	var binDirectory =
-				      		new DirectoryInfo(
-				      			Path.Combine(roleRootDirName, "approot", "bin"));
-				      	if (!binDirectory.Exists) // i.e. it's worker role, not web role
-				      		binDirectory =
-				      			new DirectoryInfo(Path.Combine(roleRootDirName, "approot"));
-
-				      	var distributiveFile = new FileInfo(
-				      		Path.Combine(binDirectory.FullName, distributiveNameOrUrl));
-
-				      	if (!distributiveFile.Exists)
-				      		throw new Exception(
-				      			String.Format(
-				      				"Distributive file {0} have not been found. Check \"Copy to Output Directory\" property is set to \"Copy always\"",
-				      				distributiveFile.FullName));
-				      	return distributiveFile;
-				});
-		}
-	}
-
 	/// <summary>Initializes CouchDB background process conventionally in Windows Azure worker or web role environment.</summary>
 	public static class CouchDBAzureBootstrapper
 	{
@@ -107,11 +34,13 @@ namespace CouchDude.Bootstrapper.Azure
 		
 		const string InstanceEndpointName = "CouchDB";
 		const string LocalResourceName    = "CouchDB";
+		const string TempResourceName     = "CouchDB.Temp";
 		const string DataDirName          = "data";
 		const string LogDirName           = "logs";
 		const string ExecutableDirName    = "bin";
 
 		private const int DefaultInitializationTimeout = 60000;
+		private const int CloudDriveMountWaitTime = 60000;
 
 		static readonly ILog Log = LogManager.GetCurrentClassLogger();
 
@@ -129,7 +58,7 @@ namespace CouchDude.Bootstrapper.Azure
 		}
 
 		/// <summary>Starts CouchDB initialization task.</summary>
-		public static Task Start()
+		public static Task<Action> Start()
 		{
 			if (!RoleEnvironment.IsAvailable)
 				throw new InvalidOperationException(
@@ -146,6 +75,8 @@ namespace CouchDude.Bootstrapper.Azure
 				.GetConfigurationSettingValue(DatabasesToReplicateConfigOption)
 				.Split(new []{';'}, StringSplitOptions.RemoveEmptyEntries);
 			var localResource = RoleEnvironment.GetLocalResource(LocalResourceName);
+			var tempResource = RoleEnvironment.GetLocalResource(TempResourceName);
+			var tempDir = new DirectoryInfo(tempResource.RootPath);
 			var useCloudDrive =
 				bool.Parse(RoleEnvironment.GetConfigurationSettingValue(UseCloudDriveConfigOption));
 
@@ -158,9 +89,9 @@ namespace CouchDude.Bootstrapper.Azure
 					var logDir = GetOrCreateSubdirectory(localResourceDir, LogDirName);
 					var binDir = GetOrCreateSubdirectory(localResourceDir, ExecutableDirName);
 
-					var getCouchDBDistributiveTask = GetDistributiveTask.Start(couchDBDistributive);
-					var getCouchDBLuceneDistributiveTask = GetDistributiveTask.Start(couchDBLuceneDistributive);
-					var getJreDistributiveTask = GetDistributiveTask.Start(jreDistributive);
+					var getCouchDBDistributiveTask = GetFileTask.Start(tempDir, couchDBDistributive);
+					var getCouchDBLuceneDistributiveTask = GetFileTask.Start(tempDir, couchDBLuceneDistributive);
+					var getJreDistributiveTask = GetFileTask.Start(tempDir, jreDistributive);
 					var getDataDirTask = useCloudDrive
 						? Task.Factory.StartNew(() => InitCloudDrive(cloudDriveSettings))
 						: Task.Factory.StartNew(() => GetOrCreateSubdirectory(localResourceDir, DataDirName));
@@ -183,28 +114,47 @@ namespace CouchDude.Bootstrapper.Azure
 					bootstrapSettings.ReplicationSettings.DatabasesToReplicate = databasesToReplicate;
 					bootstrapSettings.ReplicationSettings.EndPointsToReplicateTo = endpointsToReplicateTo;
 
-					CouchDBBootstraper.Bootstrap(bootstrapSettings);
+					return CouchDBBootstraper.Bootstrap(bootstrapSettings);
 				})
-			.ContinueWith(t =>{
+			.ContinueWith(t => {
 				if(t.IsFaulted && t.Exception != null)
 				{
-					const string sourceName = "CouchDude Azure Bootstarpper";
-					const string logName = "Application";
-
-					if (!EventLog.SourceExists(sourceName))
-						EventLog.CreateEventSource(sourceName, logName);
-
-					EventLog.WriteEntry(sourceName,  "Error occured initializing CouchDB" + t.Exception.ToString(), EventLogEntryType.Error);
-					
-					throw t.Exception;
+					const string errorDescription = "Error occured initializing CouchDB";
+					WriteBackupFile(errorDescription, t.Exception);
+					Log.Error(errorDescription, t.Exception);
 				}
+				else
+					Log.Info("CouchDB started");
+
+				return t.Result;
 			});
 		}
 
-		/// <summary>Starts CouchDB initialization task and waits for result.</summary>
-		public static void StartAndWaitForResult(int timeout = DefaultInitializationTimeout)
+		private static void WriteBackupFile(string errorDescription, Exception exception)
 		{
-			Start().Wait(timeout);
+			try
+			{
+				var buffer = new byte[4];
+				System.Security.Cryptography.RandomNumberGenerator.Create().GetBytes(buffer);
+				var randomInt = BitConverter.ToInt32(buffer, 0);
+				var fileName = 
+					Path.Combine("C:\\", string.Concat("couchdude.botstrapper.startup.error.", DateTime.Now.Ticks, randomInt, ".log"));
+				File.WriteAllText(
+					path: fileName,
+					contents: string.Concat(DateTime.UtcNow.ToString("u"), "\n", errorDescription, "\n", exception.ToString())
+				);
+			}
+			// ReSharper disable EmptyGeneralCatchClause
+			catch { }
+			// ReSharper restore EmptyGeneralCatchClause
+		}
+
+		/// <summary>Starts CouchDB initialization task and waits for result.</summary>
+		public static Action StartAndWaitForResult(int timeout = DefaultInitializationTimeout)
+		{
+			Task<Action> task = Start();
+			task.Wait(timeout);
+			return task.Result;
 		}
 
 		private static DirectoryInfo InitCloudDrive(CloudDriveSettings settings)
@@ -238,6 +188,8 @@ namespace CouchDude.Bootstrapper.Azure
 				cloudDrive.Mount(cacheSize: 25, options: DriveMountOptions.Force);
 				Log.InfoFormat("CloudDrive {0} mounted at {1}", cloudDrive.Uri, cloudDrive.LocalPath);
 
+				WaitTillCouldWrite(cloudDrive.LocalPath);
+
 				return new DirectoryInfo(cloudDrive.LocalPath);
 			}
 			catch (CloudDriveException e)
@@ -245,6 +197,24 @@ namespace CouchDude.Bootstrapper.Azure
 				Log.Error(e);
 				throw;
 			}
+		}
+
+		private static void WaitTillCouldWrite(string localPath)
+		{
+			var stopwatch = new Stopwatch();
+			stopwatch.Start();
+			while (stopwatch.ElapsedMilliseconds < CloudDriveMountWaitTime)
+				try
+				{
+					string tempFile = Path.Combine(localPath, Guid.NewGuid() + ".tmp");
+					File.WriteAllText(tempFile, "test");
+					File.Delete(tempFile);
+					// if write completes without exception drive must be operational
+					return;
+				}
+				catch(IOException) { }
+
+			throw new TimeoutException("Time out waiting for cloud drive to be mounted.");
 		}
 
 		private static void DoInitCloudDriveCache(LocalResource cloudDriveCacheLocalResource)

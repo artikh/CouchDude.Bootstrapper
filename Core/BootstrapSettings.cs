@@ -13,6 +13,7 @@ namespace CouchDude.Bootstrapper
 		private DirectoryInfo javaDirectory;
 		private DirectoryInfo dataDirectory;
 		private DirectoryInfo logDirectory;
+		private DirectoryInfo tempDirectory = new DirectoryInfo(Path.GetTempPath());
 		private bool setupCouchDBLucene;
 		private FileInfo couchDBDistributive;
 		private FileInfo couchDBLuceneDistributive;
@@ -97,6 +98,17 @@ namespace CouchDude.Bootstrapper
 			{
 				ThrowIfLocked();
 				logDirectory = value;
+			}
+		}
+		
+		/// <summary>Temporary data directory.</summary>
+		public DirectoryInfo TempDirectory
+		{
+			get { return tempDirectory; }
+			set
+			{
+				ThrowIfLocked();
+				tempDirectory = value;
 			}
 		}
 

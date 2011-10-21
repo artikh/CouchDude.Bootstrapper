@@ -10,6 +10,8 @@ namespace BootstrapperTestWorker
 {
 	public class WorkerRole : RoleEntryPoint
 	{
+		private Action throwIfCouchDBExited = () => {};
+
 		public override bool OnStart()
 		{
 			// Set the maximum number of concurrent connections 
@@ -25,7 +27,7 @@ namespace BootstrapperTestWorker
 				diagnosticsConfiguration);
 
 			//try {
-				CouchDBAzureBootstrapper.StartAndWaitForResult();
+				throwIfCouchDBExited = CouchDBAzureBootstrapper.StartAndWaitForResult();
 			//} catch { }
 
 			return true;
@@ -38,6 +40,7 @@ namespace BootstrapperTestWorker
 
 			while (true)
 			{
+				throwIfCouchDBExited();
 				Thread.Sleep(TimeSpan.FromMinutes(5));
 				Trace.WriteLine("Still working", "Information");
 			}

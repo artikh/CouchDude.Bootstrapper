@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ServiceConfiguration serviceName="CouchDudeAzureBootstrapperTest" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="1" osVersion="*">
+<ServiceConfiguration serviceName="CouchDudeAzureBootstrapperTest" 
+											osFamily="2" 
+											osVersion="*"
+											xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" >
   <Role name="TestWorker">
-    <Instances count="1" />
+    <Instances count="3" />
     <ConfigurationSettings>
       <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="UseDevelopmentStorage=true" />
       <Setting name="CouchDB.DatabasesToReplicate" value="testdb1;testdb2" />
-      <Setting name="CouchDB.CouchDBDistributive" value="https://mecastotest.blob.core.windows.net/destributives/couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip" />
-      <Setting name="CouchDB.CouchDBLuceneDistributive" value="https://mecastotest.blob.core.windows.net/destributives/couchdb-lucene-0.7.0.zip" />
-      <Setting name="CouchDB.JreDistributive" value="https://mecastotest.blob.core.windows.net/destributives/jre6.zip" />
+      <Setting name="CouchDB.CouchDBDistributive" value="couchdb-1.1.0+COUCHDB-1152_otp_R14B03_lean.zip" />
+      <Setting name="CouchDB.CouchDBLuceneDistributive" value="couchdb-lucene-0.7.0.zip" />
+      <Setting name="CouchDB.JreDistributive" value="jre6.zip" />
       <Setting name="CouchDB.UseCloudDrive" value="False" />
       <Setting name="CouchDB.CloudDrive.BlobContainer" value="drives" />
       <Setting name="CouchDB.CloudDrive.BlobName" value="couchdb-test" />
