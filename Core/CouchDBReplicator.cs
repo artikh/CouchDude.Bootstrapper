@@ -115,12 +115,18 @@ namespace CouchDude.Bootstrapper
 
 		private static void CreateDatabases(ICouchApi couchApi, IEnumerable<string> databasesToReplicate)
 		{
-			foreach (var dbToReplicateName in databasesToReplicate)
-			{
-				var dbApi = couchApi.Db(dbToReplicateName);
-				if(!dbApi.Synchronously.RequestInfo().Exists)
+			foreach (var dbApi in databasesToReplicate.Select(couchApi.Db))
+				try
+				{
 					dbApi.Synchronously.Create();
-			}
+				}
+				catch (CouchCommunicationException e)
+				{
+					// i.e. database file is already exists meannig it have been concurrently created, witch in case is possible
+					// if DB data is stored in CloudDrive or if we running on dev fabric
+					if (!e.Message.Contains("file_exists"))
+						throw;
+				}
 		}
 
 		static string GetDescriptorId(Uri remoteCouchDBBaseAddress, string databaseName)
