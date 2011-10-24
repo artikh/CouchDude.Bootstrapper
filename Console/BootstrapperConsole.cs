@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -11,67 +10,50 @@ using Common.Logging;
 
 namespace CouchDude.Bootstrapper.Console
 {
-	[DefaultVerb("Default")]
 	class BootstrapperConsole
 	{
 		private static readonly ILog Log = LogManager.GetCurrentClassLogger();
-
-		[Verb]
-		public static void Help()
-		{
-			var execName = Assembly.GetExecutingAssembly().GetName().Name + ".exe";
-			System.Console.WriteLine(
-				string.Format(
-					"Usage:\n\t{0} --ports=8081,8082,8083 --replicate-databases=db1,db2,db3 --admin-user-name=admin --admin-password=passw0rd", execName));
-		}
-
-		[Verb]
-		public static void Default(
+		
+		[Verb(IsDefault = true)]
+		public static void Bootstrap(
 			[Parameter(Required = true)] int[] ports,
 			[Parameter(Aliases = "databases")] string[] databasesToReplicate,
 			[Parameter(Aliases = "admin-user-name")] string adminUserName,
 			[Parameter(Aliases = "admin-user-password")] string adminPassword
 		)
 		{
-			try
+			var replicationSettings =
+				new ReplicationSettings {
+					EndPointsToReplicateTo = (
+						from p in ports
+						select new IPEndPoint(IPAddress.Loopback, p)
+						).ToArray(),
+					DatabasesToReplicate = databasesToReplicate ?? new string[0]
+				};
+
+			Action[] throwIfExitedUnexpectedlyActions =
+				replicationSettings
+					.EndPointsToReplicateTo
+					.Select(endPoint => StartCouchInstance(endPoint.Port - 10, endPoint.Port, replicationSettings))
+					.ToArray();
+
+			Task.Factory.StartNew(
+				() =>
+					{
+						System.Console.Write("Press ENTER to quit:");
+						System.Console.ReadLine();
+						shouldExit = true;
+					});
+
+			while (!shouldExit)
 			{
-				var replicationSettings =
-					new ReplicationSettings {
-						EndPointsToReplicateTo = (
-							from p in ports
-							select new IPEndPoint(IPAddress.Loopback, p)
-							).ToArray(),
-						DatabasesToReplicate = databasesToReplicate ?? new string[0]
-					};
-
-				Action[] throwIfExitedUnexpectedlyActions =
-					replicationSettings
-						.EndPointsToReplicateTo
-						.Select(endPoint => StartCouchInstance(endPoint.Port - 10, endPoint.Port, replicationSettings))
-						.ToArray();
-
-				Task.Factory.StartNew(
-					() =>
-						{
-							System.Console.Write("Press ENTER to quit:");
-							System.Console.ReadLine();
-							exit = true;
-						});
-
-				while (!exit)
-				{
-					foreach (var throwIfExitedUnexpectedlyAction in throwIfExitedUnexpectedlyActions)
-						throwIfExitedUnexpectedlyAction();
-					Thread.Sleep(2000);
-				}
-			}
-			catch (Exception e)
-			{
-				Log.Error(e);
+				foreach (var throwIfExitedUnexpectedlyAction in throwIfExitedUnexpectedlyActions)
+					throwIfExitedUnexpectedlyAction();
+				Thread.Sleep(2000);
 			}
 		}
 
-		private static volatile bool exit;
+		private static volatile bool shouldExit;
 
 		private static Action StartCouchInstance(int lucenePort, int port, ReplicationSettings replicationSettings)
 		{

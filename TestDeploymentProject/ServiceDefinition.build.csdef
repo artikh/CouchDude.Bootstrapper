@@ -33,7 +33,7 @@
       <InternalEndpoint name="UnusedInternal" port="88" protocol="http" />
     </Endpoints>
     <LocalResources>
-      <LocalStorage name="CouchDB" sizeInMB="2048" cleanOnRoleRecycle="false" />
+      <LocalStorage name="CouchDB" sizeInMB="2048" cleanOnRoleRecycle="true" />
       <LocalStorage name="CouchDB.Temp" sizeInMB="2048" cleanOnRoleRecycle="true" />
       <LocalStorage name="CloudDriveCache" sizeInMB="1024" cleanOnRoleRecycle="false" />
     </LocalResources>
