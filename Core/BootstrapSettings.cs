@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 
@@ -19,6 +20,7 @@ namespace CouchDude.Bootstrapper
 		private FileInfo couchDBLuceneDistributive;
 		private FileInfo javaDistributive;
 		private IPEndPoint endpointToListenOn;
+		private bool useShellExecute;
 		private readonly ReplicationSettings replicationSettings = new ReplicationSettings();
 
 		private bool locked;
@@ -98,6 +100,18 @@ namespace CouchDude.Bootstrapper
 			{
 				ThrowIfLocked();
 				logDirectory = value;
+			}
+		}
+
+		/// <summary>Indicates wether to use <see cref="ProcessStartInfo.UseShellExecute"/> starting
+		/// CouchDB process.</summary>
+		public bool UseShellExecute
+		{
+			get { return useShellExecute; }
+			set
+			{
+				ThrowIfLocked();
+				useShellExecute = value;
 			}
 		}
 		

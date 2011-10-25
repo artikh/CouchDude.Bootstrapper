@@ -73,7 +73,7 @@
     <Compile Include="BootstrapSettings.cs" />
     <Compile Include="CouchDBBootstraper.cs" />
     <Compile Include="CouchDBReplicator.cs" />
-    <Compile Include="CouchDBStarter.cs" />
+    <Compile Include="CouchDBWatchdog.cs" />
     <Compile Include="ExtractCouchDbTask.cs" />
     <Compile Include="IniFile.cs" />
     <Compile Include="IStartupTask.cs" />

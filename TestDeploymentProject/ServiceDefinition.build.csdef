@@ -9,7 +9,7 @@
   **********************************************************************************************
 -->
 <ServiceDefinition name="CouchDudeAzureBootstrapperTest" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition">
-  <WorkerRole name="TestWorker" vmsize="Small">
+  <WorkerRole name="TestWorker" vmsize="Small" enableNativeCodeExecution="true">
     <Imports>
       <Import moduleName="Diagnostics" />
       <Import moduleName="RemoteAccess" />

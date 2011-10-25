@@ -58,7 +58,7 @@ namespace CouchDude.Bootstrapper.Azure
 		}
 
 		/// <summary>Starts CouchDB initialization task.</summary>
-		public static Task<Action> Start()
+		public static Task<CouchDBWatchdog> Start()
 		{
 			if (!RoleEnvironment.IsAvailable)
 				throw new InvalidOperationException(
@@ -110,6 +110,8 @@ namespace CouchDude.Bootstrapper.Azure
 						LogDirectory               = logDir,
 						EndpointToListenOn         = localIPEndPoint,
 						SetupCouchDBLucene         = true,
+						// For some reason this is requried to run CouchDB in Azure or even devfabric
+						UseShellExecute            = true
 					};
 					bootstrapSettings.ReplicationSettings.DatabasesToReplicate = databasesToReplicate;
 					bootstrapSettings.ReplicationSettings.EndPointsToReplicateTo = endpointsToReplicateTo;
@@ -150,9 +152,9 @@ namespace CouchDude.Bootstrapper.Azure
 		}
 
 		/// <summary>Starts CouchDB initialization task and waits for result.</summary>
-		public static Action StartAndWaitForResult(int timeout = DefaultInitializationTimeout)
+		public static CouchDBWatchdog StartAndWaitForResult(int timeout = DefaultInitializationTimeout)
 		{
-			Task<Action> task = Start();
+			Task<CouchDBWatchdog> task = Start();
 			task.Wait(timeout);
 			return task.Result;
 		}

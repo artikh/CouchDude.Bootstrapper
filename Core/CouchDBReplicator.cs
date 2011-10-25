@@ -95,10 +95,13 @@ namespace CouchDude.Bootstrapper
 						descriptorsToCreate.Length,
 						string.Join(", ", descriptorsToCreate.Select(d => d.Id))
 					);
-					var createDescriptorsTasks =
-						from descriptorToCreate in descriptorsToCreate
-						select replicatorApi.SaveDescriptor(descriptorToCreate);
-					return Task.Factory.ContinueWhenAll(createDescriptorsTasks.ToArray(), ThrowAggregateIfFaulted);
+					var createDescriptorsTasks = (
+							from descriptorToCreate in descriptorsToCreate
+							select replicatorApi.SaveDescriptor(descriptorToCreate)
+						).ToArray();
+					return createDescriptorsTasks.Length == 0 
+						? Task.Factory.StartNew(() => { }) 
+						: Task.Factory.ContinueWhenAll(createDescriptorsTasks, ThrowAggregateIfFaulted);
 				})
 				.Unwrap()
 				.Wait();

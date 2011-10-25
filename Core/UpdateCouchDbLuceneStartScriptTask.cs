@@ -23,7 +23,7 @@ namespace CouchDude.Bootstrapper
 			
 			var originalContent = File.ReadAllText(luceneRunScript.FullName);
 			var edititedContent = originalContent.Replace("java.exe", string.Format("\"{0}\"", javaExecutable.FullName));
-			File.WriteAllText(luceneRunScript.FullName, edititedContent, Encoding.UTF8);
+			File.WriteAllText(luceneRunScript.FullName, edititedContent, Encoding.Default);
 		}
 	}
 }

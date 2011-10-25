@@ -8,19 +8,20 @@ using Common.Logging;
 namespace CouchDude.Bootstrapper
 {
 	/// <summary>CouchDB watching agent.</summary>
-	public class CouchDBStarter
+	public class CouchDBWatchdog
 	{
-		private const int IsRespondingTimeout = 60000;
+		private const int IsRespondingTimeout = 180000;
 
 		private readonly BootstrapSettings settings;
-		private static readonly ILog Log = LogManager.GetLogger(typeof(CouchDBStarter)); 
+		private static readonly ILog Log = LogManager.GetLogger(typeof(CouchDBWatchdog));
+		private static readonly ILog CouchDBLog = LogManager.GetLogger("CouchDB");
 
 		private readonly DirectoryInfo couchDbBinFolder;
 		private readonly FileInfo startCouchDbBatchFile;
-		private Process batchProcess;
+		private Process erlProcess;
 
 		/// <constructor />
-		public CouchDBStarter(BootstrapSettings settings)
+		public CouchDBWatchdog(BootstrapSettings settings)
 		{
 			this.settings = settings;
 			if (!settings.BinDirectory.Exists)
@@ -31,18 +32,31 @@ namespace CouchDude.Bootstrapper
 		}
 
 		/// <summary>Starts CouchDB process.</summary>
-		public void Start()
+		internal void Start()
 		{
 			Log.Info("Starting CouchDB process...");
 
-			Environment.SetEnvironmentVariable("ERL", "erl.exe");
-
-			var processStartInfo = new ProcessStartInfo(startCouchDbBatchFile.FullName, couchDbBinFolder.FullName) {
+			var processStartInfo = new ProcessStartInfo(
+				Path.Combine(couchDbBinFolder.FullName, "erl.exe"), @"-sasl errlog_type error -s couch") {
+				WorkingDirectory = couchDbBinFolder.FullName,
 				CreateNoWindow = true,
-				UseShellExecute = false
+				UseShellExecute = settings.UseShellExecute,
+				RedirectStandardError = !settings.UseShellExecute,
+				RedirectStandardOutput = !settings.UseShellExecute,
+				WindowStyle = ProcessWindowStyle.Minimized,
+				LoadUserProfile = false				
 			};
-			
-			batchProcess = Process.Start(processStartInfo);
+			erlProcess = Process.Start(processStartInfo);
+
+			if (!settings.UseShellExecute)
+			{
+				erlProcess.OutputDataReceived += (_, e) => CouchDBLog.Info(e.Data);
+				erlProcess.ErrorDataReceived += (_, e) => CouchDBLog.Error(e.Data);
+				erlProcess.Exited +=
+					(_, e) => Log.ErrorFormat("erl.exe has exited with exit code {1}", erlProcess.ProcessName, erlProcess.ExitCode);
+				erlProcess.BeginErrorReadLine();
+				erlProcess.BeginOutputReadLine();
+			}
 
 			WaitTillResponding();
 		}
@@ -50,8 +64,27 @@ namespace CouchDude.Bootstrapper
 		/// <summary>Throws <see cref="InvalidOperationException"/> if CouchDB launch script process exites.</summary>
 		public void ThrowIfExitedUnexpectedly()
 		{
-			if (batchProcess.HasExited)
-				throw new InvalidOperationException("couchdb.bat has exited with exit code " + batchProcess.ExitCode);
+			if (erlProcess.HasExited)
+				throw new InvalidOperationException("erl.exe has exited unexpectedly with code " + erlProcess.ExitCode);
+		}
+
+		/// <summary>Terminates CouchDB process if it's up and running.</summary>
+		public void TerminateIfRunning()
+		{
+			try
+			{
+				if (!erlProcess.HasExited)
+				{
+					Log.Info("Killing erl.exe...");
+					erlProcess.Kill();
+				}
+				else
+					Log.Info("Could not kill erl.exe: it's not running anymore");
+			} 
+			catch(Exception e)
+			{
+				Log.Error("Unable to kill erl.exe", e);	
+			}
 		}
 		
 		/// <summary>Blocks current thread until CouchDB is responding OK.</summary>

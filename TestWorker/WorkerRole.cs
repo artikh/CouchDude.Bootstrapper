@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
+using CouchDude.Bootstrapper;
 using CouchDude.Bootstrapper.Azure;
 using Microsoft.WindowsAzure.Diagnostics;
 using Microsoft.WindowsAzure.ServiceRuntime;
@@ -10,7 +11,7 @@ namespace BootstrapperTestWorker
 {
 	public class WorkerRole : RoleEntryPoint
 	{
-		private Action throwIfCouchDBExited = () => {};
+		private CouchDBWatchdog watchdog;
 
 		public override bool OnStart()
 		{
@@ -27,7 +28,7 @@ namespace BootstrapperTestWorker
 				diagnosticsConfiguration);
 
 			//try {
-				throwIfCouchDBExited = CouchDBAzureBootstrapper.StartAndWaitForResult();
+			watchdog = CouchDBAzureBootstrapper.StartAndWaitForResult();
 			//} catch { }
 
 			return true;
@@ -40,10 +41,15 @@ namespace BootstrapperTestWorker
 
 			while (true)
 			{
-				throwIfCouchDBExited();
+				watchdog.ThrowIfExitedUnexpectedly();
 				Thread.Sleep(TimeSpan.FromMinutes(5));
 				Trace.WriteLine("Still working", "Information");
 			}
+		}
+
+		public override void OnStop()
+		{
+			watchdog.TerminateIfRunning();
 		}
 	}
 }

@@ -63,6 +63,10 @@
       <Project>{A84CB2AD-0CE9-4CFD-831A-AB5CDFCD3653}</Project>
       <Name>Azure</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Core\Core.csproj">
+      <Project>{158ECD08-3766-4FAD-824F-3B293FFE27C8}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

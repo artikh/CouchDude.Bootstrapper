@@ -12,8 +12,6 @@ namespace CouchDude.Bootstrapper.Console
 {
 	class BootstrapperConsole
 	{
-		private static readonly ILog Log = LogManager.GetCurrentClassLogger();
-		
 		[Verb(IsDefault = true)]
 		public static void Bootstrap(
 			[Parameter(Required = true)] int[] ports,
@@ -31,7 +29,7 @@ namespace CouchDude.Bootstrapper.Console
 					DatabasesToReplicate = databasesToReplicate ?? new string[0]
 				};
 
-			Action[] throwIfExitedUnexpectedlyActions =
+			CouchDBWatchdog[] watchdogs =
 				replicationSettings
 					.EndPointsToReplicateTo
 					.Select(endPoint => StartCouchInstance(endPoint.Port - 10, endPoint.Port, replicationSettings))
@@ -42,20 +40,24 @@ namespace CouchDude.Bootstrapper.Console
 					{
 						System.Console.Write("Press ENTER to quit:");
 						System.Console.ReadLine();
+
+						foreach (var watchdog in watchdogs)
+							watchdog.TerminateIfRunning();
+
 						shouldExit = true;
 					});
 
 			while (!shouldExit)
 			{
-				foreach (var throwIfExitedUnexpectedlyAction in throwIfExitedUnexpectedlyActions)
-					throwIfExitedUnexpectedlyAction();
+				foreach (var watchdog in watchdogs)
+					watchdog.ThrowIfExitedUnexpectedly();
 				Thread.Sleep(2000);
 			}
 		}
 
 		private static volatile bool shouldExit;
 
-		private static Action StartCouchInstance(int lucenePort, int port, ReplicationSettings replicationSettings)
+		private static CouchDBWatchdog StartCouchInstance(int lucenePort, int port, ReplicationSettings replicationSettings)
 		{
 			var storageDir =
 				new DirectoryInfo(Path.Combine(Path.GetTempPath(), "couch-bootstrapper-" + DateTime.Now.Ticks + port));
