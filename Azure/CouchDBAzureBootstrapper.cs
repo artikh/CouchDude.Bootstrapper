@@ -33,11 +33,10 @@ namespace CouchDude.Bootstrapper.Azure
 		const string CloudDriveCacheLocalResourceNameConfigOption = CloudDriveConfigPrefix + "CacheResourceName";
 		
 		const string InstanceEndpointName = "CouchDB";
-		const string LocalResourceName    = "CouchDB";
+		const string BinariesResourceName      = "CouchDB";
 		const string TempResourceName     = "CouchDB.Temp";
-		const string DataDirName          = "data";
-		const string LogDirName           = "logs";
-		const string ExecutableDirName    = "bin";
+		const string LogResourceName			= "CouchDB.Log";
+		const string DataResourceName			= "CouchDB.Data";
 
 		private const int DefaultInitializationTimeout = 60000;
 		private const int CloudDriveMountWaitTime = 60000;
@@ -47,14 +46,10 @@ namespace CouchDude.Bootstrapper.Azure
 		/// <summary>Configures CouchDB and couchdb-lucene log transfer.</summary>
 		public static void ConfigureLogTransfer(DirectoriesBufferConfiguration directoriesBufferConfiguration)
 		{
-			var localResource = RoleEnvironment.GetLocalResource(LocalResourceName);
-			var localResourceDir = new DirectoryInfo(localResource.RootPath);
-			var logDir = GetOrCreateSubdirectory(localResourceDir, LogDirName);
+			var logResource = RoleEnvironment.GetLocalResource(LogResourceName);
 			directoriesBufferConfiguration.DataSources.Add(
-				new DirectoryConfiguration{
-					Container = "couchdb-logs",
-					Path = logDir.FullName
-				});
+				new DirectoryConfiguration { Container = "couchdb-logs", Path = logResource.RootPath }
+			);
 		}
 
 		/// <summary>Starts CouchDB initialization task.</summary>
@@ -74,27 +69,32 @@ namespace CouchDude.Bootstrapper.Azure
 			var databasesToReplicate = RoleEnvironment
 				.GetConfigurationSettingValue(DatabasesToReplicateConfigOption)
 				.Split(new []{';'}, StringSplitOptions.RemoveEmptyEntries);
-			var localResource = RoleEnvironment.GetLocalResource(LocalResourceName);
+			var binariesResource = RoleEnvironment.GetLocalResource(BinariesResourceName);
+			var logResource = RoleEnvironment.GetLocalResource(LogResourceName);
 			var tempResource = RoleEnvironment.GetLocalResource(TempResourceName);
 			var tempDir = new DirectoryInfo(tempResource.RootPath);
 			var useCloudDrive =
 				bool.Parse(RoleEnvironment.GetConfigurationSettingValue(UseCloudDriveConfigOption));
 
-			var cloudDriveSettings = useCloudDrive ? CloudDriveSettings.Read() : null;
+			CloudDriveSettings cloudDriveSettings = null;
+			LocalResource dataResource = null;
+			if (useCloudDrive)
+				cloudDriveSettings = CloudDriveSettings.Read();
+			else
+				dataResource = RoleEnvironment.GetLocalResource(DataResourceName);
 
 			return Task.Factory.StartNew(
 				() => {
 					// Preparing environment
-				  var localResourceDir = new DirectoryInfo(localResource.RootPath);
-					var logDir = GetOrCreateSubdirectory(localResourceDir, LogDirName);
-					var binDir = GetOrCreateSubdirectory(localResourceDir, ExecutableDirName);
+					var logDir = new DirectoryInfo(logResource.RootPath);
+					var binDir = new DirectoryInfo(binariesResource.RootPath);
 
 					var getCouchDBDistributiveTask = GetFileTask.Start(tempDir, couchDBDistributive);
 					var getCouchDBLuceneDistributiveTask = GetFileTask.Start(tempDir, couchDBLuceneDistributive);
 					var getJreDistributiveTask = GetFileTask.Start(tempDir, jreDistributive);
 					var getDataDirTask = useCloudDrive
 						? Task.Factory.StartNew(() => InitCloudDrive(cloudDriveSettings))
-						: Task.Factory.StartNew(() => GetOrCreateSubdirectory(localResourceDir, DataDirName));
+						: Task.Factory.StartNew(() => new DirectoryInfo(dataResource.RootPath));
 
 					// Waiting for all prepare tasks to finish
 					Task.WaitAll(
@@ -247,12 +247,6 @@ namespace CouchDude.Bootstrapper.Azure
 					Log.Info("Using temporary workaround for ERROR_UNSUPPORTED_OS see http://bit.ly/fw7qzo");
 					Thread.Sleep(10000);
 				}
-		}
-
-		private static DirectoryInfo GetOrCreateSubdirectory(DirectoryInfo localResourceDir, string subDirName)
-		{
-			var subDirectory = new DirectoryInfo(Path.Combine(localResourceDir.FullName, subDirName));
-			return subDirectory.Exists? subDirectory: localResourceDir.CreateSubdirectory(subDirName);
 		}
 
 		private static IEnumerable<IPEndPoint> GetCouchDBEndpoints(int port)
