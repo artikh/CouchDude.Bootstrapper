@@ -33,7 +33,7 @@ namespace CouchDude.Bootstrapper.Azure
 		const string CloudDriveCacheLocalResourceNameConfigOption = CloudDriveConfigPrefix + "CacheResourceName";
 		
 		const string InstanceEndpointName = "CouchDB";
-		const string BinariesResourceName      = "CouchDB";
+		const string BinariesResourceName = "CouchDB.Bin";
 		const string TempResourceName     = "CouchDB.Temp";
 		const string LogResourceName			= "CouchDB.Log";
 		const string DataResourceName			= "CouchDB.Data";
