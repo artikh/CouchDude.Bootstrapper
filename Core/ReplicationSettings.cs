@@ -12,10 +12,22 @@ namespace CouchDude.Bootstrapper
 	{
 		private ICollection<IPEndPoint> endPointsToReplicateTo = new IPEndPoint[0];
 		private ICollection<string> databasesToReplicate = new string[0];
+		private int? maximumReplicationRetryCount;
 		private bool locked;
 
 		/// <summary>Locks replication settings object.</summary>
 		public void Lock() { locked = true; }
+
+		/// <summary>Maximum CouchDB replication retry count.</summary>
+		public int? MaximumReplicationRetryCount
+		{
+			get { return maximumReplicationRetryCount; }
+			set
+			{
+				ThrowIfLocked();
+				maximumReplicationRetryCount = value;
+			}
+		}
 
 		/// <summary>List of CouchDB endpoints to replicate data to.</summary>
 		public ICollection<IPEndPoint> EndPointsToReplicateTo

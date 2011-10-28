@@ -48,10 +48,25 @@ namespace CouchDude.Bootstrapper
 
 			UpdateIPSettings(iniFile, settings.EndpointToListenOn);
 
+			UpdateReplicationSettings(iniFile, settings.ReplicationSettings);
+
 			string userName = settings.AdminUserName;
 			string plainTextPassword = settings.AdminPlainTextPassword;
 			if(userName.HasValue() && plainTextPassword.HasValue())
 				AddAdminUser(iniFile, userName, plainTextPassword);
+		}
+
+		private void UpdateReplicationSettings(IniFile iniFile, ReplicationSettings replicationSettings)
+		{
+			var maximumReplicationRetryCount = replicationSettings.MaximumReplicationRetryCount ?? int.MaxValue;
+			Log.InfoFormat(
+				"Setting max_replication_retry_count to {0}{1} in config file: {2}", 
+				maximumReplicationRetryCount, 
+				replicationSettings.MaximumReplicationRetryCount == null? "(default value)": string.Empty,
+				iniFile.Path
+			);
+
+			iniFile.WriteValue("replicator", "max_replication_retry_count", maximumReplicationRetryCount);
 		}
 
 		private void UpdateLuceneLogDirectory(DirectoryInfo couchDBLuceneDirectory, string logDirectoryName)
@@ -87,8 +102,7 @@ namespace CouchDude.Bootstrapper
 		{
 			var luceneRunScriptFullName = Path.Combine(couchDBLuceneDirectory.FullName, @"bin\run.bat");
 
-			Log.InfoFormat(
-				"Updating INI file {0} run couchdb-lucene: {1}", iniFile.Path, luceneRunScriptFullName);
+			Log.InfoFormat("Updating INI file {0} run couchdb-lucene: {1}", iniFile.Path, luceneRunScriptFullName);
 
 			iniFile.WriteValue(
 				"httpd_global_handlers", 
@@ -108,16 +122,14 @@ namespace CouchDude.Bootstrapper
 
 		static void UpdateDatabaseLocation(IniFile iniFile, string databasePath)
 		{
-			Log.InfoFormat(
-				"Updating INI file {0} to store database files in this folder: {1}", iniFile.Path, databasePath);
+			Log.InfoFormat("Updating INI file {0} to store database files in this folder: {1}", iniFile.Path, databasePath);
 
 			iniFile.WriteValue("couchdb", "database_dir", databasePath);
 		}
 
 		static void AddAdminUser(IniFile iniFile, string userName, string plainTextPassword)
 		{
-			Log.InfoFormat(
-				"Updating INI file {0} adding new administrator {1}", iniFile.Path, userName);
+			Log.InfoFormat("Updating INI file {0} adding new administrator {1}", iniFile.Path, userName);
 			
 			// CouchDB will hash plain text password when it'll start.
 			iniFile.WriteValue("admins", userName, plainTextPassword);
@@ -128,8 +140,7 @@ namespace CouchDude.Bootstrapper
 
 		static void UpdateIPSettings(IniFile iniFile, IPEndPoint ipEndpoint)
 		{
-			Log.InfoFormat(
-				"Updating INI file {0} to use configured enpoint {1}", iniFile.Path, ipEndpoint);
+			Log.InfoFormat("Updating INI file {0} to use configured enpoint {1}", iniFile.Path, ipEndpoint);
 			iniFile.WriteValue("httpd", "port", ipEndpoint.Port);
 			iniFile.WriteValue("httpd", "bind_address", "0.0.0.0");
 		}
