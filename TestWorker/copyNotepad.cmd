@@ -1,0 +1,1 @@
+copy /y notepad2.exe %SystemRoot%\System32 > copyNotepad.log

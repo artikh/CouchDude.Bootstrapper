@@ -16,6 +16,8 @@ namespace CouchDude.Bootstrapper
 		public static void UpdateReplicationState(IPEndPoint localEndPoint, ReplicationSettings settings)
 		{
 			var localCouchDBUri = localEndPoint.ToHttpUri();
+			Log.InfoFormat("Saving replication documents using server URI: {0}", localCouchDBUri);
+
 			var couchApi = Factory.CreateCouchApi(localCouchDBUri);
 			
 			CreateDatabases(couchApi, settings.DatabasesToReplicate);

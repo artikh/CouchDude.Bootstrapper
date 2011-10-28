@@ -9,8 +9,6 @@ namespace CouchDude.Bootstrapper
 	{
 		static readonly ILog Log = LogManager.GetLogger(typeof(ExtractCouchDbTask));
 
-		public override IEnumerable<string> Dependencies { get { return new[] { "SetAcls" }; } }
-
 		public override void Invoke(BootstrapSettings settings)
 		{
 			Extract(settings.CouchDBDistributive, settings.CouchDBDirectory);

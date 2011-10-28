@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Reflection;
+
 using Common.Logging;
 
 namespace CouchDude.Bootstrapper
@@ -22,39 +22,31 @@ namespace CouchDude.Bootstrapper
 			watchdog.Start();
 			CouchDBReplicator.UpdateReplicationState(
 				new IPEndPoint(IPAddress.Loopback, settings.EndpointToListenOn.Port), 
-				settings.ReplicationSettings);
+				settings.ReplicationSettings
+			);
 			return watchdog;
 		}
 
 		private static void RunStartupTasks(BootstrapSettings settings)
 		{
-			var tasks =
-				Assembly.GetExecutingAssembly()
-					.GetTypes()
-					.Where(t => typeof(IStartupTask).IsAssignableFrom(t))
-					.Where(t => !t.IsAbstract)
-					.Select(Activator.CreateInstance)
-					.Cast<IStartupTask>()
-					.ToDictionary(t => t.Name, t => t);
-
-			var rootTask = tasks.Values.First(t => t.Name == "Root");
-			ExecuteTaskRecursively(rootTask, tasks, new HashSet<string>(), settings);
+			ExecuteTaskRecursively(Activator.CreateInstance<RootTask>(), new HashSet<Type>(), settings);
 		}
 
 		private static void ExecuteTaskRecursively(
-			IStartupTask task, IDictionary<string, IStartupTask> tasks, ISet<string> executedTasks, BootstrapSettings settings)
+			IStartupTask task, ISet<Type> executedTasks, BootstrapSettings settings)
 		{
-			foreach (var dependencyTaskName in task.Dependencies.Where(t => !executedTasks.Contains(t)))
-			{
-				IStartupTask dependencyTask;
-				if (!tasks.TryGetValue(dependencyTaskName, out dependencyTask))
-					throw new Exception("Unknown depended task " + dependencyTaskName);
-				ExecuteTaskRecursively(dependencyTask, tasks, executedTasks, settings);
-			}
+			var dependencies =
+				from dependencyType in task.Dependencies
+				where !executedTasks.Contains(dependencyType)
+				select (IStartupTask) Activator.CreateInstance(dependencyType);
+
+			foreach (var dependencyTask in dependencies)
+				ExecuteTaskRecursively(dependencyTask, executedTasks, settings);
+
 			Log.InfoFormat("Executing {0} startup task", task.Name);
 			task.Invoke(settings);
 			Log.InfoFormat("{0} startup task have executed successfully", task.Name);
-			executedTasks.Add(task.Name);
+			executedTasks.Add(task.GetType());
 		}
 	}
 }

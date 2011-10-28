@@ -13,12 +13,12 @@ namespace CouchDude.Bootstrapper
 	{
 		private static readonly ILog Log = LogManager.GetLogger(typeof(UpdateIniFilesTask));
 
-		public override System.Collections.Generic.IEnumerable<string> Dependencies
+		public override System.Collections.Generic.IEnumerable<Type> Dependencies
 		{
 			get
 			{
-				yield return "UpdateCouchDbLuceneStartScript";
-				yield return "ExtractCouchDb";
+				yield return typeof(UpdateCouchDbLuceneStartScriptTask);
+				yield return typeof(ExtractCouchDbTask);
 			}
 		}
 

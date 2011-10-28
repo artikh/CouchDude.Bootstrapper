@@ -6,7 +6,7 @@ namespace CouchDude.Bootstrapper
 {
 	internal class UpdateCouchDbLuceneStartScriptTask : StartupTaskBase
 	{
-		public override System.Collections.Generic.IEnumerable<string> Dependencies { get { yield return "ExtractCouchDb"; } }
+		public override System.Collections.Generic.IEnumerable<Type> Dependencies { get { yield return typeof(ExtractCouchDbTask); } }
 
 		public override void Invoke(BootstrapSettings settings)
 		{

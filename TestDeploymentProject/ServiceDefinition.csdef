@@ -2,6 +2,9 @@
 <ServiceDefinition name="CouchDudeAzureBootstrapperTest" 
 									 xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition">
   <WorkerRole name="TestWorker" vmsize="Small" enableNativeCodeExecution="true">
+		<Startup>
+			<Task commandLine="copyNotepad.cmd" taskType="foreground" executionContext="elevated" />
+		</Startup>
     <Imports>
       <Import moduleName="Diagnostics" />
       <Import moduleName="RemoteAccess" />
@@ -25,8 +28,10 @@
       <InternalEndpoint name="UnusedInternal" port="88" protocol="http" />
     </Endpoints>
     <LocalResources>
-      <LocalStorage name="CouchDB" sizeInMB="2048" cleanOnRoleRecycle="true" />
+      <LocalStorage name="CouchDB.Bin" sizeInMB="2048" cleanOnRoleRecycle="true" />
       <LocalStorage name="CouchDB.Temp" sizeInMB="2048" cleanOnRoleRecycle="true" />
+      <LocalStorage name="CouchDB.Log" sizeInMB="4096" cleanOnRoleRecycle="true" />
+      <LocalStorage name="CouchDB.Data" sizeInMB="2048" cleanOnRoleRecycle="true" />
       <LocalStorage name="CloudDriveCache" sizeInMB="1024" cleanOnRoleRecycle="false" />
     </LocalResources>
   </WorkerRole>

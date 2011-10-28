@@ -81,7 +81,6 @@
     <Compile Include="IPEndPointUtils.cs" />
     <Compile Include="ReplicationSettings.cs" />
     <Compile Include="RootTask.cs" />
-    <Compile Include="SetAclsTask.cs" />
     <Compile Include="StartupTaskBase.cs" />
     <Compile Include="StringUtils.cs" />
     <Compile Include="UpdateCouchDbLuceneStartScriptTask.cs" />

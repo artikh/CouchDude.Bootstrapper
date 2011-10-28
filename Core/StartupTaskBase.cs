@@ -1,12 +1,13 @@
+using System;
 using System.Collections.Generic;
 
 namespace CouchDude.Bootstrapper
 {
 	internal abstract class StartupTaskBase : IStartupTask
 	{
-		private static readonly string[] EmptyDependencyList = new string[0];
+		private static readonly Type[] EmptyDependencyList = new Type[0];
 
-		public virtual IEnumerable<string> Dependencies { get { return EmptyDependencyList; } }
+		public virtual IEnumerable<Type> Dependencies { get { return EmptyDependencyList; } }
 
 		public virtual void Invoke(BootstrapSettings settings) { }
 

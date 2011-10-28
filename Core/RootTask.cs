@@ -1,10 +1,12 @@
+using System;
+
 namespace CouchDude.Bootstrapper
 {
 	class RootTask : StartupTaskBase
 	{
-		public override System.Collections.Generic.IEnumerable<string> Dependencies
+		public override System.Collections.Generic.IEnumerable<Type> Dependencies
 		{
-			get { return new[] { "ExtractCouchDb", "SetAcls", "UpdateIniFiles" }; }
+			get { return new[] { typeof(ExtractCouchDbTask), typeof(UpdateIniFilesTask) }; }
 		}
 	}
 }
