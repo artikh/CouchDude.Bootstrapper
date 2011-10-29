@@ -46,65 +46,61 @@ namespace CouchDude.Bootstrapper
 
 			var replicatorApi = couchApi.Replicator;
 			replicatorApi.GetAllDescriptorNames()
-				.ContinueWith(t => {
-					Log.Info("Loading existing replication descriptors...");
-					var loadTasks = (
-						from descriptorId in t.Result
-						select replicatorApi.RequestDescriptorById(descriptorId)
-							.ContinueWith(pt => pt.IsCompleted? pt.Result: null)
-					).ToArray();
-					return Task.Factory.ContinueWhenAll(
-						loadTasks,
-						tasks => {
-							var existingDescriptors = (
-								from loadTask in tasks
-								select loadTask.Result
-								into descriptor
-								where descriptor != null
-								select descriptor
+				.ContinueWith(
+					t => {
+						Log.Info("Loading existing replication descriptors...");
+						var loadTasks = (
+							from descriptorId in t.Result
+							select replicatorApi
+											.RequestDescriptorById(descriptorId)
+											.ContinueWith(pt => pt.IsCompleted? pt.Result: null)
 							).ToArray();
+						return Task.Factory.ContinueWhenAll(
+							loadTasks,
+							tasks => {
+								var existingDescriptors = (
+									from loadTask in tasks
+									select loadTask.Result
+									into descriptor
+									where descriptor != null
+									select descriptor).ToArray();
 
-							Log.InfoFormat(
-								"{0} replication descriptors found in the _replicator database: {1}",
-								existingDescriptors.Length,
-								string.Join(", ", existingDescriptors.Select(d => d.Id))
+								Log.InfoFormat(
+									"{0} replication descriptors found in the _replicator database: {1}",
+									existingDescriptors.Length,
+									string.Join(", ", existingDescriptors.Select(d => d.Id)));
+								return existingDescriptors;
+							});
+					})
+				.Unwrap()
+				.ContinueWith(
+					t => {
+						var descritorsToDelete = t.Result;
+						Log.InfoFormat(
+							"Deleting {0} replication descriptors from _replicator database: {1}",
+							descritorsToDelete.Length,
+							string.Join(", ", descritorsToDelete.Select(d => d.Id)));
+						var deleteTasks =
+							from descritorToDelete in descritorsToDelete
+							select replicatorApi.DeleteDescriptor(descritorToDelete);
+						return Task.Factory.ContinueWhenAll(deleteTasks.ToArray(), ThrowAggregateIfFaulted);
+					})
+				.Unwrap()
+				.ContinueWith(
+					t => {
+						Log.InfoFormat(
+							"Creating {0} replication descriptors in _replicator database: {1}",
+							descriptorsToCreate.Length,
+							string.Join(", ", descriptorsToCreate.Select(d => d.Id))
 							);
-							return existingDescriptors;
-						});
-				})
-				.Unwrap()
-				.ContinueWith(t => {
-				  var descritorsToDelete = (
-				    from descriptorToCreate in descriptorsToCreate
-				    from existingDescriptor in t.Result
-				    where existingDescriptor.Id == descriptorToCreate.Id
-						select existingDescriptor
-					).ToArray();
-					Log.InfoFormat(
-						"Deleting {0} replication descriptors from _replicator database: {1}",
-						descritorsToDelete.Length,
-						string.Join(", ", descritorsToDelete.Select(d => d.Id))
-					);
-				  var deleteTasks =
-						from descritorToDelete in descritorsToDelete
-						select replicatorApi.DeleteDescriptor(descritorToDelete);
-				  return Task.Factory.ContinueWhenAll(deleteTasks.ToArray(), ThrowAggregateIfFaulted);
-				})
-				.Unwrap()
-				.ContinueWith(t => {
-					Log.InfoFormat(
-						"Creating {0} replication descriptors in _replicator database: {1}",
-						descriptorsToCreate.Length,
-						string.Join(", ", descriptorsToCreate.Select(d => d.Id))
-					);
-					var createDescriptorsTasks = (
+						var createDescriptorsTasks = (
 							from descriptorToCreate in descriptorsToCreate
 							select replicatorApi.SaveDescriptor(descriptorToCreate)
-						).ToArray();
-					return createDescriptorsTasks.Length == 0 
-						? Task.Factory.StartNew(() => { }) 
-						: Task.Factory.ContinueWhenAll(createDescriptorsTasks, ThrowAggregateIfFaulted);
-				})
+							).ToArray();
+						return createDescriptorsTasks.Length == 0
+							? Task.Factory.StartNew(() => { })
+							: Task.Factory.ContinueWhenAll(createDescriptorsTasks, ThrowAggregateIfFaulted);
+					})
 				.Unwrap()
 				.Wait();
 
