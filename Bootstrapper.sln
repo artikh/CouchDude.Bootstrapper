@@ -7,10 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azure", "Azure\Azure.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{C7B1C3FE-2262-411D-BD41-ED0981D54177}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestWorker", "TestWorker\TestWorker.csproj", "{33191256-D97B-4826-8DDA-74A54BD21BC0}"
-EndProject
-Project("{CC5FD16D-436D-48AD-A40C-5A424C6E3E79}") = "TestDeploymentProject", "TestDeploymentProject\TestDeploymentProject.ccproj", "{F58F1C67-00B1-44A4-8203-6A8978B388DA}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

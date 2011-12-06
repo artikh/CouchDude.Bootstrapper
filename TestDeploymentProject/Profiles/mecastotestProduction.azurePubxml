@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <AzureCredentials>Mecasto.Azure Test Accout</AzureCredentials>
+    <AzureDeploymentLabel>CouchDudeAzureBootstrapperTest</AzureDeploymentLabel>
+    <AzureSlot>Production</AzureSlot>
+    <AzureEnableWebDeploy>False</AzureEnableWebDeploy>
+    <AzureHostedServiceName>mecastotest</AzureHostedServiceName>
+    <AzureHostedServiceLabel>mecastotest</AzureHostedServiceLabel>
+    <AzureEnableIntelliTrace>False</AzureEnableIntelliTrace>
+    <AzureEnableProfiling>False</AzureEnableProfiling>
+    <AzureServiceConfiguration>Cloud</AzureServiceConfiguration>
+    <AzureSolutionConfiguration>Debug</AzureSolutionConfiguration>
+    <AzureStorageAccountName>mecastotest</AzureStorageAccountName>
+    <AzureStorageAccountLabel>mecastotest</AzureStorageAccountLabel>
+    <AzureAppendTimestampToDeploymentLabel>True</AzureAppendTimestampToDeploymentLabel>
+  </PropertyGroup>
+</Project>
