@@ -105,7 +105,7 @@ namespace CouchDude.Bootstrapper
 						throw new Exception(string.Format("CouchDB has not responded for {0} milliseconds", stopwatch.ElapsedMilliseconds));
 					try
 					{
-						var response = httpClient.Get(pingAddress);
+						var response = httpClient.GetAsync(pingAddress).Result;
 						if (response.IsSuccessStatusCode)
 						{
 							Log.InfoFormat("CouchDB is up and avaliable at {0}", pingAddress);
