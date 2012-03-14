@@ -1,8 +1,7 @@
 properties {
     Import-Module .\teamcity.psm1
-
-    $config = 'Debug'
-    $isDebug = $conifg -eq 'Debug'
+    
+    if($config -eq $null) { $config = 'Debug' }
     
     $scriptDir = (resolve-path .).Path
     $rootDir = (resolve-path ..).Path;
@@ -18,7 +17,7 @@ properties {
     }
     
     if ($nugetSources -eq $null) {
-        $nugetSources = "https://go.microsoft.com/fwlink/?LinkID=206669;"
+        $nugetSources = "https://go.microsoft.com/fwlink/?LinkID=206669"
     }
 }
 
@@ -39,8 +38,8 @@ task setVersion {
 
 
 task installPackages {
-    dir -Recurse -Filter packages.config | %{    
-        exec { ..\tools\nuget\NuGet.exe install $_ -Source $nugetSources -OutputDirectory "$srcDir\Packages"  }
+    dir -Path $rootDir -Recurse -Filter packages.config | %{    
+        exec { ..\tools\nuget\NuGet.exe install $_.FullName -Source $nugetSources -OutputDirectory "$srcDir\Packages"  }
     }
 }
 
