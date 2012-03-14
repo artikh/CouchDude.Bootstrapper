@@ -12,9 +12,9 @@ namespace CouchDude.Bootstrapper.Console
 		{
 			LogManager.Adapter = new ConsoleOutLoggerFactoryAdapter();
 			var parser = new Parser<BootstrapperConsole>();
-			parser.RegisterEmptyHelpHandler(HandleEmpty);
-			parser.RegisterErrorHandler(HandleError);
-			parser.Run(args);
+			parser.Register.EmptyHelpHandler(HandleEmpty);
+			parser.Register.ErrorHandler(HandleError);
+			parser.Run(args, new BootstrapperConsole());
 		}
 
 		private static void HandleEmpty(string obj)
@@ -26,17 +26,17 @@ namespace CouchDude.Bootstrapper.Console
 					execName));
 		}
 
-		private static void HandleError(Exception e)
+		private static void HandleError(ExceptionContext e)
 		{
 			System.Console.WriteLine("\nUnexpected error occured:"
 #if DEBUG
-			                         + "\n" + e.ToString()
+			                         + "\n" + e.Exception.ToString()
 #else
-							+ e.GetType().Name
+							+ e.Exception.GetType().Name
 							+ ": "
-							+ e.Message
+							+ e.Exception.Message
 #endif
-				);
+);
 		}
 	}
 }

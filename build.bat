@@ -1,0 +1,1 @@
+@powershell -NoLogo -ExecutionPolicy Unrestricted -File .\Scripts\interactiveBulid.ps1

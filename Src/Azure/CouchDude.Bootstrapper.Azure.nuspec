@@ -15,14 +15,15 @@
     <copyright>Copyright 2011</copyright>
 	<tags>couchdb</tags>
     <dependencies>
-		<dependency id="Common.Logging" version="2.0.0" />
-		<dependency id="HttpClient" version="0.5.0" />
-		<dependency id="JsonValue" version="0.5.0" />
-        <dependency id="Newtonsoft.Json" version="4.0.3" />
-        <dependency id="DotNetZip" version="1.9.1.8" />
-        <dependency id="CouchDude" version="$version$" />
-        <dependency id="CouchDude.Bootstrapper" version="$version$" />
-        <dependency id="JetBrains.Annotations" version="6.1" />
+			<dependency id="AsyncCTP" version="0.3" />
+			<dependency id="Common.Logging" version="2.0.0" />
+			<dependency id="CouchDude" version="0.20.0" />
+			<dependency id="CouchDude.Bootstrapper" version="0.20.0" />
+			<dependency id="JetBrains.Annotations" version="6.1" />
+			<dependency id="Newtonsoft.Json" version="4.0.8" />
+			<dependency id="System.Json" version="4.0.20126.16343" />
+			<dependency id="System.Net.Http" version="2.0.20126.16343" />
+			<dependency id="System.Net.Http.Formatting" version="4.0.20126.16343" />
     </dependencies>
     <frameworkAssemblies>
       <frameworkAssembly assemblyName="Microsoft.WindowsAzure.CloudDrive, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
