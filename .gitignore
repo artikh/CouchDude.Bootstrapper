@@ -1,0 +1,15 @@
+old
+obj
+bin
+build
+Packages
+_ReSharper.*
+*.user
+*.suo
+*.cache
+*.orig
+*.swp
+*.log
+*.tmp
+*.eprj
+*.user.ps1
